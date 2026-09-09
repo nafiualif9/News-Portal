@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "The Weekly Bengal"
+description = "A bilingual Bengali-first news and magazine portal with editorial stories, live search, category navigation, article reading, and role-based demo dashboards for administrators and reporters."
+version = "1.0.0"
+id = "artifacts/weekly-bengal"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23525
+
+[services.development]
+run = "pnpm --filter @workspace/weekly-bengal run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/weekly-bengal", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/weekly-bengal/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23525"
+BASE_PATH = "/"

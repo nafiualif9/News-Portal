@@ -1,0 +1,62 @@
+Build a production-ready, fully responsive, modern Bilingual News & Magazine Portal named "The Weekly Bengal" (বাংলায়: "দি উইকলি বেঙ্গল") using React with Vite, Tailwind CSS, Lucide React icons, and Supabase.
+
+CRITICAL FILE SYSTEM & ROOT ARCHITECTURE (MANDATORY):
+- DO NOT create any nested folder like 'artifacts/' or subdirectories for the application.
+- ALL application files MUST reside directly at the project root `./`.
+- `package.json`, `vite.config.ts`, `tailwind.config.js`, and `index.html` MUST be located strictly at the top-level repository root.
+- Ensure standard Vite configuration without any forced environment variables (like BASE_PATH or PORT) so it deploys seamlessly to Vercel with zero modifications.
+
+1. Brand Identity & Masthead (Pure Typography, Universal Reach):
+- Portal Name: "The Weekly Bengal" (English) / "দি উইকলি বেঙ্গল" (বাংলা).
+- Tagline: "বাংলার কণ্ঠস্বর, বিশ্বমঞ্চের দর্পণ" / "Voice of Bengal, Lens to the World".
+- Pure Typographic Header (No Image Logo Needed):
+  * Elegant, high-contrast newspaper masthead styling using serif accents.
+  * Universal Header: DO NOT include any specific city, weather location, or local place restriction. This portal serves a global/universal audience.
+  * Top bar displays only: Live dynamic bilingual date & clock (defaults to Bengali format), dark/light mode toggle, and the language switcher.
+
+2. Language & Localization (Default: বাংলা):
+- DEFAULT LANGUAGE MUST BE BENGALI ('bn'). The entire portal loads in Bengali by default on first visit.
+- Clean language toggle (বাংলা | English) in the top bar with localStorage persistence.
+- Typography: Use Hind Siliguri / Tiro Bangla (via Google Fonts) for Bengali and clean Inter for English.
+- Every section, headline, category name, author badge, and date format must seamlessly adapt dynamically.
+
+3. Role-Based Access Control & Multi-Role Dashboards (Super Admin vs. Reporter):
+- Dedicated authentication flow at `/login` or `/admin/login`:
+  * Super Admin Role:
+    - Full CRUD access to all articles (create, edit, delete, publish, toggle lead/breaking status).
+    - Reporter Management: View list of reporters, invite/add new staff, toggle active status, and assign roles.
+    - Site Overview: Total readership views, weekly post volume, and global stats.
+  * Reporter / Staff Role:
+    - Dedicated Reporter Panel: Can create, edit, and manage only their own articles.
+    - Editorial Workflow: Save as "Draft" or submit for "Pending Review" (Admin reviews and publishes).
+    - Personal Metrics: Track own article views, published story count, and author profile details.
+- Provide quick one-click demo credentials ("Login as Admin" / "Login as Reporter") on the login page for immediate access without backend keys.
+
+4. Frontend Layout & Editorial Features:
+- Header & Navigation:
+  * Minimalist, elegant typographic masthead.
+  * Instant live search overlay with search filtering.
+  * Responsive category navigation: জাতীয়, আন্তর্জাতিক, রাজনীতি, অর্থনীতি, খেলাধুলা, প্রযুক্তি, বিনোদন, সম্পাদকীয়/সাপ্তাহিক বিশেষ (English: National, International, Politics, Business, Sports, Tech, Entertainment, Editorial/Special).
+- Homepage:
+  * Breaking News Ticker (স্ক্রলিং তাজা খবর) with pause control and bilingual breaking badges.
+  * Hero Lead Story: 1 prominent lead feature story with large cover image, excerpt, author badge, and reading time + 4 curated secondary stories.
+  * Categorized News Sections: Distinct magazine blocks for Politics, Tech, Sports, and Global Affairs.
+  * Photo/Multimedia story carousel and newsletter subscription block.
+- Single Article View:
+  * Distraction-free editorial reading experience with reading progress bar.
+  * Share buttons (Facebook, WhatsApp, X, Copy Link).
+  * Author bio card displaying reporter name, avatar, and role.
+  * Reader comments section and related articles recommendations.
+
+5. Content Editor (CRUD Article Management):
+- Dual-tab bilingual form for articles (Title_bn, Title_en, Content_bn, Content_en, Excerpt_bn, Excerpt_en).
+- Category picker, image URL input with real-time preview, and checkboxes for "Lead Story" and "Breaking News".
+
+6. Supabase Integration & Mock State:
+- Generate `supabase-schema.sql` directly at root `./supabase-schema.sql`:
+  * `profiles` table: id, full_name, email, role ('admin' or 'reporter'), avatar_url, bio, created_at.
+  * `articles` table: id, author_id, title_bn, title_en, content_bn, content_en, excerpt_bn, excerpt_en, category, featured_image_url, status ('draft', 'pending', 'published'), is_breaking, is_lead, views_count, created_at.
+  * `comments` table: id, article_id, user_name, comment_text, created_at.
+  * Supabase RLS policies granting public read access to published posts and appropriate role-restricted access for reporters and admins.
+- Use environment variables: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- Provide high-quality Bengali mock data so the portal displays complete, authentic editorial content out of the box.
