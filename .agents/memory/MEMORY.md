@@ -1,0 +1,1 @@
+- [Local seed merge versioning](seed-merge.md) — merge new demo records into localStorage without overwriting user edits.
