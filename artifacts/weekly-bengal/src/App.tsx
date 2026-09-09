@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, Link, useLocation, useParams, Router as WouterRouter } from 'wouter';
 import { ArrowRight, BarChart3, Bookmark, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Copy, Edit3, FileText, Menu, Moon, Newspaper, PenLine, Play, Plus, Search, Send, Share2, ShieldCheck, Sun, Trash2, TrendingUp, UserRound, Users, X } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 type Lang = 'bn' | 'en';
 type Status = 'draft' | 'pending' | 'published';
@@ -34,6 +35,7 @@ const images = {
   editorial: 'https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1200',
   lifestyle: 'https://images.pexels.com/photos/1647962/pexels-photo-1647962.jpeg?auto=compress&cs=tinysrgb&w=1200',
 };
+
 const categoryOptions = [
   { bn: 'জাতীয়', en: 'National' },
   { bn: 'আন্তর্জাতিক', en: 'International' },
@@ -46,66 +48,47 @@ const categoryOptions = [
   { bn: 'সম্পাদকীয় ও মতামত', en: 'Editorial & Opinion' },
   { bn: 'ফিচার ও জীবনযাপন', en: 'Features & Lifestyle' },
 ];
+
 const seedArticles: Article[] = [
-  { id:'a1', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'নদীর কাছে ফিরে আসা: সুন্দরবনের নতুন কথামালা', titleEn:'Returning to the river: new stories from the Sundarbans', contentBn:'জোয়ারের জল যখন কাদামাটির উঠোন ছুঁয়ে যায়, তখন সুন্দরবনের মানুষ সময়কে ঘড়িতে মাপেন না। তাঁরা মাপেন নৌকার দড়িতে, মাটির গন্ধে, আর দূরের বনের নীরবতায়। এই বদলে যাওয়া উপকূলের মানুষদের সঙ্গে আমাদের দীর্ঘ আলাপ।\\n\\nগত দশ বছরে নদীর গতিপথ বদলেছে। তবু ছোট ছোট উদ্যোগ, ম্যানগ্রোভের চারা এবং মেয়েদের সমবায় এই জনপদে নতুন আশার মানচিত্র এঁকে দিচ্ছে।', contentEn:'When the tide touches the mud courtyards, people in the Sundarbans do not measure time by clocks. They measure it in boat ropes, the scent of wet earth, and the silence of the forest beyond. We spent a week listening to the people of this changing coast.\\n\\nIn the last decade, the river has shifted course. Yet small collectives, mangrove nurseries and women-led cooperatives are drawing a new map of possibility.', excerptBn:'জোয়ারের জল, বদলে যাওয়া নদী আর মানুষের অনমনীয় আশার গল্প।', excerptEn:'A story of shifting tides, stubborn hope and the people of a changing coast.', category:'সমাজ', image:images.river, status:'published', isBreaking:false, isLead:true, views:18420, createdAt:'2025-02-18', readTime:8 },
-  { id:'a2', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'শীতের সকালে শান্ত নদীর তীরে জেগে ওঠা এক জনপদ', titleEn:'The town that wakes up by the quiet river on a winter morning', contentBn:'কুয়াশার নরম পর্দা সরিয়ে নদীপাড়ের জনপদ প্রতিদিন নিজের চিরচেনা রূপটি ফিরে পায়। মাঝির সুর, গরম চায়ের ধোঁয়া আর সকালের হাটের কোলাহল—এই ছোট ছোট দৃশ্যগুলিই এর প্রাণ।', contentEn:'Behind a soft winter veil, the riverside town wakes to its familiar morning. Boat songs, hot steaming tea and the bustling morning bazaar: these rituals remain its truest soul.', excerptBn:'মাঝির সুর, গরম চায়ের ধোঁয়া আর সকালের হাট—নদীপাড়ের শান্ত সকালের ছবি।', excerptEn:'Boat songs, hot morning tea and the river bazaar: frames of a quiet dawn.', category:'শহর', image:images.kolkata, status:'published', isBreaking:true, isLead:false, views:9240, createdAt:'2025-02-17', readTime:5 },
-  { id:'a3', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'বইমেলার বাইরে: বাংলা বইয়ের নতুন পাঠকরা', titleEn:'Beyond the book fair: Bengal’s new readers', contentBn:'বইমেলা শেষ হয়ে গেলেও পড়া থামে না। শহরের অলিগলি থেকে জেলা শহর—নতুন পাঠকেরা নিজেদের পাঠচক্র তৈরি করছেন, নিজেদের ভাষায় প্রশ্ন তুলছেন।', contentEn:'Reading does not stop when the fair closes. From city lanes to district towns, new readers are building their own circles and asking questions in their own voices.', excerptBn:'মেলা ছাড়িয়ে পাঠের যে নতুন ভূগোল তৈরি হচ্ছে।', excerptEn:'The new geography of reading taking shape beyond the fair.', category:'সংস্কৃতি', image:images.books, status:'published', isBreaking:false, isLead:false, views:7310, createdAt:'2025-02-16', readTime:6 },
-  { id:'a4', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'এক মুঠো বীজে বদলে যাচ্ছে ফসলের মাঠ', titleEn:'A handful of seeds is changing the agrarian landscape', contentBn:'দেশি ধানের বীজ, জলসাশ্রয়ী পদ্ধতি এবং কৃষকদের নিজস্ব জ্ঞান মিলে তৈরি হচ্ছে এক বিকল্প ভবিষ্যৎ।', contentEn:'Native rice seeds, water-wise methods and farmers’ own knowledge are creating an alternative future.', excerptBn:'কৃষকদের নিজস্ব জ্ঞানেই ফিরছে মাঠের বৈচিত্র্য।', excerptEn:'Field diversity returns through farmers’ own knowledge.', category:'জীবন', image:images.village, status:'published', isBreaking:false, isLead:false, views:6120, createdAt:'2025-02-15', readTime:4 },
-  { id:'a5', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'শেষ ট্রেনের জানলায় দেখা এক অন্য বাংলা', titleEn:'Another Bengal, seen from a last train window', contentBn:'রাত বাড়ে, স্টেশন ছোট হতে থাকে। জানলার বাইরে যে আলো জ্বলে থাকে, তার প্রত্যেকটির পেছনে আছে একটি করে গল্প।', contentEn:'Night deepens and stations grow smaller. Every light beyond the window holds a story of its own.', excerptBn:'রাতের ট্রেন, ছোট স্টেশন আর জানলার বাইরের আলো।', excerptEn:'Night trains, small stations and the lights beyond the window.', category:'ভ্রমণ', image:images.train, status:'published', isBreaking:false, isLead:false, views:4870, createdAt:'2025-02-14', readTime:7 },
-  { id:'a6', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'শিল্পীর ঘরে: রঙের মধ্যে ইতিহাসের হাওয়া', titleEn:'Inside the artist’s room, where history moves through colour', contentBn:'পুরোনো কাগজ, লাল মাটি এবং স্মৃতির টুকরো দিয়ে যে ছবিগুলি তৈরি হয়, তারা কোনও একক সময়ের নয়।', contentEn:'Made from old paper, red earth and fragments of memory, these paintings belong to no single time.', excerptBn:'লাল মাটি, পুরোনো কাগজ এবং স্মৃতির ছবির ঘর।', excerptEn:'A room of red earth, old paper and remembered images.', category:'শিল্প', image:images.art, status:'pending', isBreaking:false, isLead:false, views:0, createdAt:'2025-02-19', readTime:5 },
-  { id:'a7', authorId:'r4', authorName:'মৃণাল দত্ত', titleBn:'চায়ের কাপে চা-বাগানের ছোট ইতিহাস', titleEn:'A small history of the tea gardens in a single cup', contentBn:'চা শুধু পানীয় নয়, এই ভূখণ্ডে শ্রম, অভিবাসন এবং স্মৃতির এক দীর্ঘ নথি।', contentEn:'Tea is more than a drink here: it is a long record of labour, migration and memory.', excerptBn:'চা-বাগানের শ্রম আর স্মৃতির দীর্ঘ নথি।', excerptEn:'A long record of labour and memory in the tea gardens.', category:'ইতিহাস', image:images.tea, status:'draft', isBreaking:false, isLead:false, views:0, createdAt:'2025-02-20', readTime:6 },
-  { id:'a8', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'সীমান্তের হাটে নতুন বাংলার প্রতিদিন', titleEn:'A new Bengal takes shape in a border market', contentBn:'সীমান্তের হাটে ভাষা, পণ্য আর মানুষের চলাচল কোনও মানচিত্রের রেখা মানে না। কৃষক, ক্ষুদ্র ব্যবসায়ী এবং কারিগরদের সঙ্গে কথা বলে দেখা গেল, জাতীয় জীবনের সবচেয়ে বড় গল্পগুলি অনেক সময় ছোট বাজারেই লেখা হয়।\\n\\nনতুন রাস্তা ও ডিজিটাল পেমেন্ট বদলে দিয়েছে কেনাবেচার ছন্দ, কিন্তু বিশ্বাস এখনও মুখে মুখে তৈরি হয়।', contentEn:'In a border market, language, goods and people move beyond the lines on a map. Conversations with farmers, small traders and craftspeople reveal how the biggest stories of national life are often written in small bazaars.\\n\\nNew roads and digital payments have changed the rhythm of trade, but trust is still built face to face.', excerptBn:'সীমান্তের হাটে মানুষের চলাচল আর বদলে যাওয়া জাতীয় জীবনের গল্প।', excerptEn:'A border market reveals how everyday movement is reshaping national life.', category:'জাতীয়', image:images.national, status:'published', isBreaking:false, isLead:false, views:8420, createdAt:'2025-02-21', readTime:7 },
-  { id:'a9', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'শহরের বাইরে দেশের নতুন জনপরিসর', titleEn:'The new public spaces emerging beyond the city', contentBn:'জেলা শহরের পাঠাগার, স্টেশন সংলগ্ন চত্বর আর নদীর পাড়ে তৈরি হচ্ছে নতুন জনপরিসর। সেখানে রাজনীতি যেমন আলোচনায় আসে, তেমনই আসে কবিতা, চাকরি আর জলবায়ুর উদ্বেগ।', contentEn:'Libraries in district towns, station squares and riverfronts are becoming new public spaces. Politics enters these conversations alongside poetry, jobs and the anxiety of a changing climate.', excerptBn:'জেলা শহরের পাঠাগার থেকে নদীর পাড়—দেশের নতুন আলাপের জায়গাগুলি।', excerptEn:'Where district libraries and riverfronts are creating room for a wider national conversation.', category:'জাতীয়', image:images.kolkata, status:'published', isBreaking:false, isLead:false, views:5970, createdAt:'2025-02-20', readTime:5 },
-  { id:'a10', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'দক্ষিণ এশিয়ার নদীগুলির ভাগাভাগি ভবিষ্যৎ', titleEn:'The shared future of South Asia’s rivers', contentBn:'হিমালয় থেকে বদ্বীপ—নদী কোনও এক দেশের সম্পত্তি নয়। গবেষক, জেলে এবং নদী-নির্ভর পরিবারের অভিজ্ঞতা বলছে, সীমান্ত পেরোনো জলের ভবিষ্যৎ নির্ধারণ করবে সহযোগিতার ভাষা।\\n\\nপ্রযুক্তি ও তথ্য ভাগাভাগি শুধু চুক্তির বিষয় নয়; এটি বন্যার আগাম সতর্কতা থেকে কৃষকের বীজ বাছাই পর্যন্ত মানুষের দৈনন্দিন নিরাপত্তার প্রশ্ন।', contentEn:'From the Himalayas to the delta, a river belongs to no single country. Researchers, fishers and river-dependent families say the future of shared water will be decided by the language of cooperation.\\n\\nSharing technology and data is not only a diplomatic question; it shapes daily safety, from flood warnings to the seeds farmers choose.', excerptBn:'সীমান্ত পেরোনো জলের ভবিষ্যৎ সহযোগিতার ভাষা চাইছে।', excerptEn:'Shared rivers are asking South Asia to imagine cooperation beyond borders.', category:'আন্তর্জাতিক', image:images.world, status:'published', isBreaking:true, isLead:false, views:11240, createdAt:'2025-02-22', readTime:9 },
-  { id:'a11', authorId:'r4', authorName:'মৃণাল দত্ত', titleBn:'নগর থেকে দ্বীপ: জলবায়ু উদ্বাস্তুদের নতুন মানচিত্র', titleEn:'From cities to islands: a new map of climate migration', contentBn:'সমুদ্রপৃষ্ঠের উচ্চতা বাড়ার সঙ্গে সঙ্গে মানুষ শুধু বাড়ি হারাচ্ছে না, হারাচ্ছে পেশা ও পরিচিত সামাজিক নেটওয়ার্কও। ভারত মহাসাগরের দ্বীপগুলিতে তৈরি হওয়া ছোট ছোট অভিযোজনের গল্প দেখায়, স্থানান্তরও পরিকল্পিত ও মর্যাদাপূর্ণ হতে পারে।', contentEn:'As sea levels rise, people lose more than homes: they lose livelihoods and familiar social networks. Small adaptations across Indian Ocean islands show that migration can also be planned, dignified and community-led.', excerptBn:'জলবায়ু বদলের সঙ্গে মানুষের চলাচল ও মর্যাদার নতুন প্রশ্ন।', excerptEn:'Climate change is rewriting where people live and how they belong.', category:'আন্তর্জাতিক', image:images.coast, status:'published', isBreaking:false, isLead:false, views:6780, createdAt:'2025-02-21', readTime:8 },
-  { id:'a12', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'ভোটের পরে নাগরিকের কাজ কোথা থেকে শুরু', titleEn:'Where a citizen’s work begins after the vote', contentBn:'নির্বাচনের দিন গণতন্ত্রের শেষ নয়, বরং প্রতিদিনের জবাবদিহির শুরু। পাড়ার জল, স্কুলের শিক্ষক আর হাসপাতালের ওষুধ নিয়ে নাগরিকেরা কীভাবে তথ্য সংগ্রহ করছেন, তার খোঁজে আমরা গিয়েছিলাম তিনটি শহরে।', contentEn:'Election day is not democracy’s finish line but the start of everyday accountability. We visited three towns to see how citizens are collecting information about water, teachers and medicine.', excerptBn:'ভোটের পরের জবাবদিহি কীভাবে পাড়ার জীবনে তৈরি হয়।', excerptEn:'How everyday accountability grows after election day.', category:'রাজনীতি', image:images.politics, status:'published', isBreaking:false, isLead:false, views:9360, createdAt:'2025-02-23', readTime:7 },
-  { id:'a13', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'দলীয় কার্যালয়ের বাইরে যে রাজনীতি বেঁচে থাকে', titleEn:'The politics that lives outside party offices', contentBn:'রাজনীতি শুধু মিছিল বা সংসদীয় বিতর্কে থাকে না। নিত্যপণ্যের দাম, বাসের রুট এবং পাড়ার খেলার মাঠের ভবিষ্যৎ নিয়ে মানুষের কথাতেও ক্ষমতার প্রশ্ন উঠে আসে।', contentEn:'Politics does not live only in rallies or parliamentary debates. Questions of power appear in conversations about daily essentials, bus routes and public playgrounds.', excerptBn:'দৈনন্দিন জীবনের সিদ্ধান্তে রাজনীতির অদৃশ্য উপস্থিতি।', excerptEn:'The invisible politics inside everyday decisions.', category:'রাজনীতি', image:images.editorial, status:'published', isBreaking:false, isLead:false, views:7210, createdAt:'2025-02-22', readTime:6 },
-  { id:'a14', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'ক্ষুদ্র ব্যবসার ডিজিটাল সকাল', titleEn:'The digital morning of small businesses', contentBn:'মফস্বলের দোকানদারদের কাছে ডিজিটাল পেমেন্ট শুধু দ্রুত লেনদেন নয়; এটি ক্রেতাকে ধরে রাখার নতুন ভাষা। তবে নেটওয়ার্ক, ঋণ এবং ভাষাগত বাধা এখনও তাদের পথ আটকে রাখে।\\n\\nবাজারের নতুন প্রজন্ম নিজেদের হিসাব ফোনে রাখছে, আবার পুরোনো খাতাটিও ফেলে দিচ্ছে না।', contentEn:'For small-town shopkeepers, digital payments are not only faster transactions but a new way of keeping customers. Yet networks, credit and language barriers still shape who gets included.\\n\\nA new generation is keeping accounts on phones without quite abandoning the old ledger.', excerptBn:'ডিজিটাল পেমেন্ট বদলাচ্ছে ছোট ব্যবসার ভাষা, কিন্তু সব বাধা কাটেনি।', excerptEn:'Digital payments are changing small business, without erasing old barriers.', category:'অর্থনীতি', image:images.economy, status:'published', isBreaking:false, isLead:false, views:8040, createdAt:'2025-02-24', readTime:7 },
-  { id:'a15', authorId:'r4', authorName:'মৃণাল দত্ত', titleBn:'ধান, বাজার আর কৃষকের ন্যায্য দাম', titleEn:'Rice, markets and the farmer’s fair price', contentBn:'ফসল ঘরে তোলার আনন্দ অনেক সময় বাজারে গিয়ে থেমে যায়। কৃষক সমবায়, সরাসরি বিক্রি এবং সংরক্ষণের নতুন ব্যবস্থা কীভাবে ন্যায্য দাম ফিরিয়ে আনতে পারে, তা দেখছে এই প্রতিবেদন।', contentEn:'The joy of harvest often ends at the market. This report looks at how cooperatives, direct sales and better storage can help return a fair price to farmers.', excerptBn:'ফসলের দাম ঠিক করার লড়াইয়ে সমবায়ের নতুন ভূমিকা।', excerptEn:'How cooperatives are changing the fight for a fair farm price.', category:'অর্থনীতি', image:images.village, status:'published', isBreaking:false, isLead:false, views:6550, createdAt:'2025-02-23', readTime:6 },
-  { id:'a16', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'নব্বই মিনিটের পরে যে শহর জেগে থাকে', titleEn:'The city that stays awake after ninety minutes', contentBn:'স্টেডিয়ামের আলো নিভে গেলে খেলা শেষ হয় না। পাড়ার দোকান, ট্রেনের কামরা আর পরিবারের ফোনালাপে একটি ম্যাচের স্মৃতি নতুন সামাজিক গল্প হয়ে ওঠে। আমরা অনুসরণ করেছি এক সমর্থক পরিবারের দিন।', contentEn:'When the stadium lights go out, the game is not over. In tea stalls, train compartments and family calls, a match becomes a new social story. We followed one supporter family through match day.', excerptBn:'একটি ম্যাচ কীভাবে শহরের রাত, পরিবার আর বন্ধুত্ব বদলে দেয়।', excerptEn:'How one match reshapes a city’s night, families and friendships.', category:'খেলাধুলা', image:images.sports, status:'published', isBreaking:true, isLead:false, views:14580, createdAt:'2025-02-25', readTime:8 },
-  { id:'a17', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'মেয়েদের মাঠে ফুটবলের নতুন ভাষা', titleEn:'A new football language on the women’s field', contentBn:'মেয়েদের ফুটবল দলগুলি শুধু ট্রফির জন্য খেলছে না; তারা মাঠ, যাতায়াত এবং পরিবারে নিজের জায়গার সংজ্ঞা বদলাচ্ছে। ছোট শহরের অনুশীলন থেকে জাতীয় শিবির পর্যন্ত এই লড়াইয়ের অনেক স্তর।', contentEn:'Women’s football teams are not playing only for trophies. They are changing ideas of space, travel and family expectations, from small-town practice grounds to national camps.', excerptBn:'মাঠের বাইরে সামাজিক বাধা ভেঙে মেয়েদের ফুটবলের উত্থান।', excerptEn:'Women’s football is breaking social barriers far beyond the field.', category:'খেলাধুলা', image:images.sports, status:'published', isBreaking:false, isLead:false, views:10320, createdAt:'2025-02-24', readTime:7 },
-  { id:'a18', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'স্ক্রিনের সামনে নতুন মাঠ: বাংলার ই-স্পোর্টস দল', titleEn:'A new field on screen: Bengal’s esports teams', contentBn:'ই-স্পোর্টসের অনুশীলন ঘরে হলেও তার শৃঙ্খলা কোনও অংশে কম নয়। কৌশল, মানসিক প্রস্তুতি এবং দলগত যোগাযোগ নিয়ে বাংলার তরুণ খেলোয়াড়েরা তৈরি করছেন এক নতুন পেশার পরিসর।\\n\\nতবু ইন্টারনেট খরচ, ডিভাইসের দাম এবং অভিভাবকের সংশয় তাদের যাত্রাকে কঠিন করে।', contentEn:'Esports practice happens at home, but its discipline is no less real. Strategy, mental preparation and team communication are opening a new professional path for young players in Bengal.\\n\\nData costs, hardware prices and parental doubt still make that path difficult.', excerptBn:'ই-স্পোর্টসের অনুশীলন, পেশা এবং বাংলার তরুণদের নতুন স্বপ্ন।', excerptEn:'Inside the discipline, ambition and uncertainty of Bengal’s esports players.', category:'ই-স্পোর্টস ও গেমিং', image:images.esports, status:'published', isBreaking:false, isLead:false, views:11980, createdAt:'2025-02-26', readTime:8 },
-  { id:'a19', authorId:'r4', authorName:'মৃণাল দত্ত', titleBn:'গেমিং ক্যাফে থেকে কমিউনিটি: খেলায় একসঙ্গে বড় হওয়া', titleEn:'From gaming café to community', contentBn:'গেমিং ক্যাফেগুলি শহরের অলিগলিতে শুধু খেলার জায়গা নয়, নতুন বন্ধুত্ব ও দক্ষতা শেখার ঘর হয়ে উঠছে। সেখানে টুর্নামেন্টের পাশাপাশি চলছে কোডিং, স্ট্রিমিং এবং ডিজিটাল গল্প বলার পাঠ।', contentEn:'Gaming cafés are becoming more than places to play. They are rooms for friendship and skill-building, where tournaments sit beside lessons in coding, streaming and digital storytelling.', excerptBn:'গেমিং ক্যাফে কীভাবে নতুন কমিউনিটি ও দক্ষতার ঘর হয়ে উঠছে।', excerptEn:'How gaming cafés are growing into communities for friendship and digital skills.', category:'ই-স্পোর্টস ও গেমিং', image:images.esports, status:'published', isBreaking:false, isLead:false, views:8840, createdAt:'2025-02-25', readTime:6 },
-  { id:'a20', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'বাংলা ভাষায় কৃত্রিম বুদ্ধিমত্তার প্রথম পাঠ', titleEn:'An introduction to artificial intelligence in Bangla', contentBn:'কৃত্রিম বুদ্ধিমত্তা নিয়ে আলোচনায় বাংলা ভাষা দীর্ঘদিন প্রান্তে ছিল। নতুন গবেষণা ও স্বেচ্ছাসেবী উদ্যোগগুলি ভাষার ডেটা, শিক্ষার উপকরণ এবং স্থানীয় প্রযুক্তি তৈরির সম্ভাবনা খুলে দিচ্ছে।\\n\\nপ্রশ্ন শুধু মেশিন কত দ্রুত উত্তর দেয় তা নয়; প্রশ্ন হল, কার ভাষায় সে উত্তর দিতে শেখে।', contentEn:'Bangla has long sat at the margins of conversations about artificial intelligence. New research and volunteer projects are opening possibilities for language data, education tools and local technology.\\n\\nThe question is not only how quickly a machine answers, but whose language it learns to answer in.', excerptBn:'বাংলা ভাষায় কৃত্রিম বুদ্ধিমত্তার সুযোগ, সীমা এবং ন্যায়ের প্রশ্ন।', excerptEn:'What artificial intelligence could mean for Bangla, education and language justice.', category:'প্রযুক্তি', image:images.technology, status:'published', isBreaking:true, isLead:false, views:15720, createdAt:'2025-02-27', readTime:9 },
-  { id:'a21', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'মেরামতির শহর: পুরোনো ফোনে নতুন জীবন', titleEn:'The repair city: giving old phones a new life', contentBn:'প্রযুক্তির বাজারে নতুন মডেলের ভিড়ের মধ্যেও মেরামতির দোকানগুলি টিকে আছে মানুষের আস্থা ও দক্ষতার জোরে। পুরোনো ফোন ঠিক করার কাজ এখন ই-বর্জ্য কমানো এবং জীবিকার এক গুরুত্বপূর্ণ অংশ।', contentEn:'Repair shops survive the flood of new devices through trust and skill. Fixing old phones is now both a way to reduce e-waste and an important livelihood.', excerptBn:'পুরোনো ফোনের মেরামতি, ই-বর্জ্য আর শহরের অদৃশ্য দক্ষতার গল্প।', excerptEn:'Repairing old phones is reshaping e-waste and urban livelihoods.', category:'প্রযুক্তি', image:images.technology, status:'published', isBreaking:false, isLead:false, views:9320, createdAt:'2025-02-26', readTime:6 },
-  { id:'a22', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'একটি গান, বহু পর্দা: বাংলা সঙ্গীতের নতুন শ্রোতা', titleEn:'One song, many screens: Bengal’s new music audience', contentBn:'স্টুডিও, রিল এবং ছোট লাইভ মঞ্চ—বাংলা গানের শিল্পীরা এখন একই সঙ্গে বহু ধরনের শ্রোতার কাছে পৌঁছন। এই বদলে যাওয়া শিল্প-অর্থনীতি নতুন স্বাধীনতা যেমন দিচ্ছে, তেমনই চাপও তৈরি করছে।', contentEn:'Studios, short videos and small live stages now connect Bengali musicians with many audiences at once. The changing creative economy brings new freedom, and new pressure.', excerptBn:'স্ট্রিমিং আর লাইভ মঞ্চে বদলে যাচ্ছে বাংলা গানের শ্রোতা।', excerptEn:'Streaming and live stages are changing who listens to Bengali music.', category:'বিনোদন', image:images.entertainment, status:'published', isBreaking:false, isLead:false, views:10860, createdAt:'2025-02-28', readTime:7 },
-  { id:'a23', authorId:'r4', authorName:'মৃণাল দত্ত', titleBn:'সিনেমার পর্দায় ছোট শহরের বড় গল্প', titleEn:'Big stories from small towns on the screen', contentBn:'নতুন বাংলা সিনেমায় ছোট শহর আর গ্রাম আর শুধু পটভূমি নয়; তারা নিজেরাই গল্পের চরিত্র। নির্মাতা ও অভিনেতাদের সঙ্গে কথায় উঠে এল এই বদলের নন্দন ও অর্থনীতি।', contentEn:'In new Bengali cinema, small towns and villages are no longer just backdrops; they are characters. Directors and actors discuss the aesthetics and economics of that change.', excerptBn:'বাংলা সিনেমায় প্রান্তের মানুষ কীভাবে গল্পের কেন্দ্র হয়ে উঠছেন।', excerptEn:'How Bengali cinema is moving people from the margins to the centre.', category:'বিনোদন', image:images.entertainment, status:'published', isBreaking:false, isLead:false, views:7680, createdAt:'2025-02-27', readTime:6 },
-  { id:'a24', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'মতভেদের ভেতরেও কেন সংবাদপত্র দরকার', titleEn:'Why newspapers matter even when we disagree', contentBn:'একটি মতের সঙ্গে একমত না হয়েও তার যুক্তি পড়া গণতান্ত্রিক জীবনের গুরুত্বপূর্ণ অভ্যাস। সম্পাদকীয় পাতার এই লেখা মতামতকে জয়ী করার নয়, বরং প্রশ্নকে আরও পরিষ্কার করার পক্ষে।', contentEn:'Reading an argument we do not agree with is an important democratic habit. This editorial is not about winning an opinion, but about making the question clearer.', excerptBn:'মতভেদের সময়ে পড়া, শোনা এবং প্রশ্ন করার প্রয়োজন।', excerptEn:'Why reading, listening and questioning matter most in a divided moment.', category:'সম্পাদকীয় ও মতামত', image:images.editorial, status:'published', isBreaking:false, isLead:false, views:6340, createdAt:'2025-02-28', readTime:5 },
-  { id:'a25', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'খবরের গতি কমিয়ে দেখার অধিকার', titleEn:'The right to slow down and look again', contentBn:'প্রতিদিনের দ্রুত আপডেটের ভিড়ে কিছু গল্পকে ধীরে পড়তে হয়। আমাদের সম্পাদকীয় অবস্থান বলছে, মনোযোগও একটি নাগরিক সম্পদ—তাকে বাঁচিয়ে রাখার জন্য সংবাদমাধ্যমের দায় আছে।', contentEn:'Amid the rush of daily updates, some stories need to be read slowly. Our editorial position is that attention is a civic resource, and journalism has a duty to protect it.', excerptBn:'দ্রুত খবরের যুগে মনোযোগ ও ধীর পাঠের পক্ষে একটি সম্পাদকীয়।', excerptEn:'An editorial for attention and slow reading in the age of instant news.', category:'সম্পাদকীয় ও মতামত', image:images.editorial, status:'published', isBreaking:false, isLead:false, views:5890, createdAt:'2025-02-27', readTime:5 },
-  { id:'a26', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'রান্নাঘর থেকে ফিরে দেখা বাংলার ঋতু', titleEn:'Reading Bengal’s seasons from the kitchen', contentBn:'শীতের নলেন গুড়, বর্ষার ইলিশ আর গরমের কাঁচা আম—রান্নাঘর শুধু স্বাদের জায়গা নয়, স্মৃতি ও পরিবেশেরও নথি। এই ফিচারে আমরা খাবারের ভেতর দিয়ে ঋতুর বদল পড়ি।\\n\\nবাড়ির রেসিপি, বাজারের দাম এবং কৃষকের শ্রম মিলিয়ে একটি প্লেট কীভাবে একটি অঞ্চলের ইতিহাস বলে, সেই গল্পও এখানে আছে।', contentEn:'Date-palm jaggery in winter, hilsa in the rains and green mango in summer: the kitchen is an archive of memory and ecology. This feature reads Bengal’s changing seasons through food.\\n\\nFamily recipes, market prices and farmers’ labour show how one plate can tell the history of a region.', excerptBn:'খাবার, স্মৃতি আর ঋতুর বদলে যাওয়া বাংলার একটি ফিচার।', excerptEn:'A feature on food, memory and Bengal’s changing seasons.', category:'ফিচার ও জীবনযাপন', image:images.lifestyle, status:'published', isBreaking:false, isLead:false, views:12420, createdAt:'2025-03-01', readTime:9 },
-  { id:'a27', authorId:'r4', authorName:'মৃণাল দত্ত', titleBn:'পাড়ার ছাদে ছোট বাগান, বড় স্বস্তি', titleEn:'Small rooftop gardens, a larger sense of ease', contentBn:'শহরের ছাদে টবে জন্মানো লঙ্কা, তুলসী আর লেবু শুধু খাবারের জোগান দেয় না; তারা প্রতিবেশীদের নতুন করে পরিচিতও করে। ছোট বাগানের এই অভ্যাস মানসিক স্বস্তি ও জলবায়ু সচেতনতার সঙ্গে জড়িয়ে যাচ্ছে।', contentEn:'Chillies, basil and lemons grown in rooftop pots do more than supply a kitchen; they help neighbours meet again. Small gardening habits are becoming part of mental wellbeing and climate awareness.', excerptBn:'ছোট ছাদবাগান কীভাবে শহরে স্বস্তি, পরিচয় আর সবুজ ফিরিয়ে আনে।', excerptEn:'How rooftop gardens bring ease, connection and green life back to the city.', category:'ফিচার ও জীবনযাপন', image:images.lifestyle, status:'published', isBreaking:false, isLead:false, views:8760, createdAt:'2025-02-29', readTime:6 },
+  { id:'a1', authorId:'r1', authorName:'ঋদ্ধি সেন', titleBn:'নদীর কাছে ফিরে আসা: সুন্দরবনের নতুন কথামালা', titleEn:'Returning to the river: new stories from the Sundarbans', contentBn:'জোয়ারের জল যখন কাদামাটির উঠোন ছুঁয়ে যায়, তখন সুন্দরবনের মানুষ সময়কে ঘড়িতে মাপেন না। তাঁরা মাপেন নৌকার দড়িতে, মাটির গন্ধে, আর দূরের বনের নীরবতায়।', contentEn:'When the tide touches the mud courtyards, people in the Sundarbans do not measure time by clocks.', excerptBn:'জোয়ারের জল, বদলে যাওয়া নদী আর মানুষের অনমনীয় আশার গল্প।', excerptEn:'A story of shifting tides, stubborn hope and the people of a changing coast.', category:'সমাজ', image:images.river, status:'published', isBreaking:false, isLead:true, views:18420, createdAt:'2026-02-18', readTime:8 },
+  { id:'a2', authorId:'r2', authorName:'সায়ন্তনী ঘোষ', titleBn:'শীতের সকালে শান্ত নদীর তীরে জেগে ওঠা এক জনপদ', titleEn:'The town that wakes up by the quiet river on a winter morning', contentBn:'কুয়াশার নরম পর্দা সরিয়ে নদীপাড়ের জনপদ প্রতিদিন নিজের চিরচেনা রূপটি ফিরে পায়।', contentEn:'Behind a soft winter veil, the riverside town wakes to its familiar morning.', excerptBn:'মাঝির সুর, গরম চায়ের ধোঁয়া আর সকালের হাট—নদীপাড়ের শান্ত সকালের ছবি।', excerptEn:'Boat songs, hot morning tea and the river bazaar: frames of a quiet dawn.', category:'শহর', image:images.kolkata, status:'published', isBreaking:true, isLead:false, views:9240, createdAt:'2026-02-17', readTime:5 },
+  { id:'a3', authorId:'r3', authorName:'অর্ক ভট্টাচার্য', titleBn:'বইমেলার বাইরে: বাংলা বইয়ের নতুন পাঠকরা', titleEn:'Beyond the book fair: Bengal’s new readers', contentBn:'বইমেলা শেষ হয়ে গেলেও পড়া থামে না। জেলা শহর থেকে নতুন পাঠকেরা নিজেদের পাঠচক্র তৈরি করছেন।', contentEn:'Reading does not stop when the fair closes.', excerptBn:'মেলা ছাড়িয়ে পাঠের যে নতুন ভূগোল তৈরি হচ্ছে।', excerptEn:'The new geography of reading taking shape beyond the fair.', category:'সংস্কৃতি', image:images.books, status:'published', isBreaking:false, isLead:false, views:7310, createdAt:'2026-02-16', readTime:6 }
 ];
+
 const seedReporters: Reporter[] = [
   { id:'r1', name:'ঋদ্ধি সেন', email:'riddhi@weeklybengal.news', role:'Senior Reporter', avatar:'ঋস', bio:'উপকূল, জলবায়ু ও মানুষের গল্প লেখেন।', active:true },
   { id:'r2', name:'সায়ন্তনী ঘোষ', email:'sayantani@weeklybengal.news', role:'City Editor', avatar:'সঘ', bio:'শহর, সংস্কৃতি ও নাগরিক জীবনের খোঁজ রাখেন।', active:true },
   { id:'r3', name:'অর্ক ভট্টাচার্য', email:'arka@weeklybengal.news', role:'Arts Correspondent', avatar:'অভ', bio:'শিল্প, বই ও মানুষের সৃজনশীলতার গল্প।', active:true },
   { id:'r4', name:'মৃণাল দত্ত', email:'mrinal@weeklybengal.news', role:'Contributor', avatar:'মদ', bio:'নদীবিধৌত জনপদের জীবন ও ইতিহাস নিয়ে লেখেন।', active:false },
 ];
+
 const seedComments: Comment[] = [
-  { id:'c1', articleId:'a1', userName:'সোহিনী মুখোপাধ্যায়', text:'এই লেখার ভেতর দিয়ে সুন্দরবনকে যেন আরও কাছে পেলাম।', createdAt:'আজ, ১০:৪২' },
-  { id:'c2', articleId:'a1', userName:'দেবাশিস পাল', text:'স্থানীয় মানুষের কণ্ঠকে সামনে আনার জন্য ধন্যবাদ।', createdAt:'গতকাল, ২১:০৮' },
+  { id:'c1', articleId:'a1', userName:'সোহিনী মুখোপাধ্যায়', text:'এই লেখার ভেতর দিয়ে সুন্দরবনকে যেন আরও কাছে পেলাম।', createdAt:'আজ, ১০:৪২' }
 ];
 
-type AppContextValue = { lang: Lang; setLang: (v: Lang) => void; dark: boolean; toggleDark: () => void; articles: Article[]; setArticles: Dispatch<SetStateAction<Article[]>>; reporters: Reporter[]; setReporters: Dispatch<SetStateAction<Reporter[]>>; comments: Comment[]; setComments: Dispatch<SetStateAction<Comment[]>>; session: Session; setSession: (v: Session) => void; notice: (s: string) => void };
+type AppContextValue = {
+  lang: Lang;
+  setLang: (v: Lang) => void;
+  dark: boolean;
+  toggleDark: () => void;
+  articles: Article[];
+  setArticles: Dispatch<SetStateAction<Article[]>>;
+  reporters: Reporter[];
+  setReporters: Dispatch<SetStateAction<Reporter[]>>;
+  comments: Comment[];
+  setComments: Dispatch<SetStateAction<Comment[]>>;
+  session: Session;
+  setSession: (v: Session) => void;
+  notice: (s: string) => void;
+  saveArticle: (article: Article) => Promise<void>;
+  deleteArticle: (id: string) => Promise<void>;
+};
+
 const AppContext = createContext<AppContextValue | null>(null);
 const useApp = () => useContext(AppContext)!;
 const tx = (lang: Lang, bn: string, en: string) => lang === 'bn' ? bn : en;
 const formatDate = (s: string, lang: Lang) => new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', { day:'numeric', month:'long', year:'numeric' }).format(new Date(s));
-const seedVersion = 'categories-v4';
-const loadArticles = (): Article[] => {
-  try {
-    const stored = JSON.parse(localStorage.getItem('wb-articles') || 'null') as Article[] | null;
-    if (!stored) return seedArticles;
-    if (localStorage.getItem('wb-seed-version') !== seedVersion) {
-      localStorage.setItem('wb-seed-version', seedVersion);
-      const existingIds = new Set(stored.map((article) => article.id));
-      return [...stored, ...seedArticles.filter((article) => !existingIds.has(article.id))];
-    }
-    return stored;
-  } catch {
-    return seedArticles;
-  }
-};
+
 const searchableArticleText = (article: Article) => {
   const category = categoryOptions.find((option) => option.bn === article.category);
   return [
@@ -119,6 +102,7 @@ const searchableArticleText = (article: Article) => {
     category?.en || '',
   ].join(' ').toLocaleLowerCase();
 };
+
 function Seo({ title, description, image, type = 'website', path, lang }: { title: string; description: string; image?: string; type?: 'website' | 'article'; path?: string; lang: Lang }) {
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const canonicalPath = path || (typeof window === 'undefined' ? '/' : window.location.pathname);
@@ -144,9 +128,8 @@ function Seo({ title, description, image, type = 'website', path, lang }: { titl
 }
 
 function Header() {
-  const { lang, setLang, dark, toggleDark, session, notice } = useApp();
+  const { lang, setLang, dark, toggleDark, session } = useApp();
   const [menu, setMenu] = useState(false);
-  const [, navigate] = useLocation();
   return <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md">
     <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 sm:px-6">
       <button className="md:hidden text-foreground" onClick={() => setMenu(!menu)} data-testid="button-mobile-menu" aria-label="Open navigation"><Menu size={22}/></button>
@@ -162,33 +145,83 @@ function Header() {
         <button className="hidden rounded-full px-2 py-1.5 text-xs font-bold md:block" onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} data-testid="button-language-toggle">{lang === 'bn' ? 'EN' : 'বাং'}</button>
         <button className="rounded-full p-2 hover:bg-secondary" onClick={toggleDark} data-testid="button-theme-toggle" aria-label="Toggle theme">{dark ? <Sun size={17}/> : <Moon size={17}/>}</button>
         {session ? <Link href={session.role === 'admin' ? '/admin' : '/reporter'} className="hidden items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs font-bold sm:flex" data-testid="link-dashboard"><UserRound size={14}/>{session.name}</Link> : <Link href="/login" className="hidden rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground sm:block" data-testid="link-login">{tx(lang,'প্রবেশ','Login')}</Link>}
-        <button className="hidden" onClick={() => { navigate('/'); notice(''); }} />
       </div>
     </div>
   </header>;
 }
+
 function Footer() {
   const { lang } = useApp();
   const currentYear = new Date().getFullYear();
-  return <footer className="mt-20 bg-sidebar text-sidebar-foreground"><div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-14 sm:grid-cols-4 sm:px-8">
-    <div className="sm:col-span-2"><div className="display text-3xl font-bold">The Weekly Bengal</div><p className="bn mt-3 max-w-sm text-sm leading-7 text-sidebar-foreground/65">{tx(lang,'বাংলার জানলা দিয়ে বিশ্বের দিকে তাকানো। প্রতিদিনের খবর, মানুষের গল্প এবং চিন্তার জায়গা।','A window from Bengal to the wider world. News, human stories and a little room to think.')}</p><div className="mt-6 flex gap-2"><span className="h-2 w-2 rounded-full bg-accent"/><span className="h-2 w-2 rounded-full bg-sidebar-foreground/30"/><span className="h-2 w-2 rounded-full bg-sidebar-foreground/30"/></div></div>
-    <div><div className="kicker text-sidebar-foreground/50">Explore</div><div className="mt-4 space-y-3 text-sm text-sidebar-foreground/75"><Link href="/search" className="block hover:text-accent">আর্কাইভ</Link><Link href="/search?category=সংস্কৃতি" className="block hover:text-accent">সংস্কৃতি</Link><Link href="/search?category=ভ্রমণ" className="block hover:text-accent">ভ্রমণ</Link></div></div>
-    <div><div className="kicker text-sidebar-foreground/50">The paper</div><div className="mt-4 space-y-3 text-sm text-sidebar-foreground/75"><span className="block">আমাদের কথা</span><span className="block">যোগাযোগ</span><span className="block">গোপনীয়তা</span></div></div>
-  </div><div className="border-t border-sidebar-border py-5 text-center font-mono text-[10px] tracking-[.18em] text-sidebar-foreground/45">© {currentYear} THE WEEKLY BENGAL · PUBLISHED FROM BANGLADESH</div></footer>;
+  return <footer className="mt-20 bg-sidebar text-sidebar-foreground">
+    <div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-14 sm:grid-cols-4 sm:px-8">
+      <div className="sm:col-span-2">
+        <div className="display text-3xl font-bold">The Weekly Bengal</div>
+        <p className="bn mt-3 max-w-sm text-sm leading-7 text-sidebar-foreground/65">{tx(lang,'বাংলার জানলা দিয়ে বিশ্বের দিকে তাকানো। প্রতিদিনের খবর, মানুষের গল্প এবং চিন্তার জায়গা।','A window from Bengal to the wider world. News, human stories and a little room to think.')}</p>
+        <div className="mt-6 flex gap-2"><span className="h-2 w-2 rounded-full bg-accent"/><span className="h-2 w-2 rounded-full bg-sidebar-foreground/30"/><span className="h-2 w-2 rounded-full bg-sidebar-foreground/30"/></div>
+      </div>
+      <div>
+        <div className="kicker text-sidebar-foreground/50">Explore</div>
+        <div className="mt-4 space-y-3 text-sm text-sidebar-foreground/75">
+          <Link href="/search" className="block hover:text-accent">আর্কাইভ</Link>
+          <Link href="/search?category=জাতীয়" className="block hover:text-accent">জাতীয়</Link>
+          <Link href="/search?category=আন্তর্জাতিক" className="block hover:text-accent">আন্তর্জাতিক</Link>
+        </div>
+      </div>
+      <div>
+        <div className="kicker text-sidebar-foreground/50">The paper</div>
+        <div className="mt-4 space-y-3 text-sm text-sidebar-foreground/75">
+          <span className="block">আমাদের কথা</span>
+          <span className="block">যোগাযোগ</span>
+          <span className="block">গোপনীয়তা</span>
+        </div>
+      </div>
+    </div>
+    <div className="border-t border-sidebar-border py-5 text-center font-mono text-[10px] tracking-[.18em] text-sidebar-foreground/45">
+      © {currentYear} THE WEEKLY BENGAL · PUBLISHED FROM BANGLADESH
+    </div>
+  </footer>;
 }
+
 function Ticker() {
   const { lang } = useApp();
-  return <div className="bg-accent text-accent-foreground"><div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-2 text-xs"><span className="shrink-0 font-bold uppercase tracking-[.18em]">{tx(lang,'এই মুহূর্তে','Live')}</span><span className="h-3 w-px bg-accent-foreground/35"/><div className="truncate bn">{tx(lang,'সারাদেশে বৃষ্টির পূর্বাভাস, বইছে শীতল বসন্তের বাতাস','Rain forecast across the country as cool spring breeze sets in')}</div><Link href="/search" className="ml-auto shrink-0 font-bold underline underline-offset-2">{tx(lang,'সব খবর','All news')}</Link></div></div>;
+  return <div className="bg-accent text-accent-foreground">
+    <div className="mx-auto flex max-w-[1280px] items-center gap-4 px-4 py-2 text-xs">
+      <span className="shrink-0 font-bold uppercase tracking-[.18em]">{tx(lang,'এই মুহূর্তে','Live')}</span>
+      <span className="h-3 w-px bg-accent-foreground/35"/>
+      <div className="truncate bn">{tx(lang,'সারাদেশে বৃষ্টির পূর্বাভাস, বইছে শীতল বাতাস','Rain forecast across the country as cool breeze sets in')}</div>
+      <Link href="/search" className="ml-auto shrink-0 font-bold underline underline-offset-2">{tx(lang,'সব খবর','All news')}</Link>
+    </div>
+  </div>;
 }
-function Notice({ children }: { children: ReactNode }) { return <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-sidebar px-5 py-3 text-sm text-sidebar-foreground shadow-xl enter">{children}</div>; }
-function SectionTitle({ title, kicker, href='/search' }: { title: string; kicker?: string; href?: string }) { return <div className="mb-6 flex items-end justify-between border-b border-border pb-3"><div><div className="kicker mb-1">{kicker}</div><h2 className="display text-2xl font-bold sm:text-3xl">{title}</h2></div><Link href={href} className="flex items-center gap-1 text-xs font-bold text-primary hover:text-accent" data-testid={`link-more-${title}`}>আরও <ArrowRight size={14}/></Link></div>; }
+
+function Notice({ children }: { children: ReactNode }) { 
+  return <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-sidebar px-5 py-3 text-sm text-sidebar-foreground shadow-xl enter">{children}</div>; 
+}
+
+function SectionTitle({ title, kicker, href='/search' }: { title: string; kicker?: string; href?: string }) { 
+  return <div className="mb-6 flex items-end justify-between border-b border-border pb-3">
+    <div><div className="kicker mb-1">{kicker}</div><h2 className="display text-2xl font-bold sm:text-3xl">{title}</h2></div>
+    <Link href={href} className="flex items-center gap-1 text-xs font-bold text-primary hover:text-accent" data-testid={`link-more-${title}`}>আরও <ArrowRight size={14}/></Link>
+  </div>; 
+}
+
 function StoryCard({ article, featured=false }: { article: Article; featured?: boolean }) {
   const { lang } = useApp();
   return <Link href={`/article/${article.id}`} className={`group block ${featured ? '' : 'grid grid-cols-[112px_1fr] gap-4 sm:grid-cols-[150px_1fr]'}`} data-testid={`card-article-${article.id}`}>
-    <div className={`relative overflow-hidden rounded-sm bg-muted ${featured ? 'aspect-[16/10]' : 'aspect-[4/3]'}`}><img src={article.image} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105"/>{article.isBreaking && <span className="absolute left-2 top-2 bg-accent px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-accent-foreground">{tx(lang,'জরুরি','Breaking')}</span>}</div>
-    <div className={featured ? 'mt-4' : ''}><div className="kicker mb-2">{article.category}</div><h3 className={`display font-bold leading-[1.25] group-hover:text-primary ${featured ? 'text-2xl sm:text-3xl' : 'text-lg'}`}>{lang === 'bn' ? article.titleBn : article.titleEn}</h3><p className={`bn mt-2 leading-7 text-muted-foreground ${featured ? 'text-base' : 'line-clamp-2 text-sm'}`}>{lang === 'bn' ? article.excerptBn : article.excerptEn}</p><div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground"><span>{article.authorName}</span><span>·</span><span>{article.readTime} min read</span></div></div>
+    <div className={`relative overflow-hidden rounded-sm bg-muted ${featured ? 'aspect-[16/10]' : 'aspect-[4/3]'}`}>
+      <img src={article.image || images.river} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105"/>
+      {article.isBreaking && <span className="absolute left-2 top-2 bg-accent px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-accent-foreground">{tx(lang,'জরুরি','Breaking')}</span>}
+    </div>
+    <div className={featured ? 'mt-4' : ''}>
+      <div className="kicker mb-2">{article.category}</div>
+      <h3 className={`display font-bold leading-[1.25] group-hover:text-primary ${featured ? 'text-2xl sm:text-3xl' : 'text-lg'}`}>{lang === 'bn' ? article.titleBn : article.titleEn}</h3>
+      <p className={`bn mt-2 leading-7 text-muted-foreground ${featured ? 'text-base' : 'line-clamp-2 text-sm'}`}>{lang === 'bn' ? article.excerptBn : article.excerptEn}</p>
+      <div className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground"><span>{article.authorName}</span><span>·</span><span>{article.readTime} min read</span></div>
+    </div>
   </Link>;
 }
+
 function Home() {
   const { lang, articles, notice } = useApp();
   const [clock, setClock] = useState(new Date());
@@ -199,61 +232,514 @@ function Home() {
   const lead = published.find(a => a.isLead) || published[0];
   const secondary = published.filter(a => a.id !== lead?.id).slice(0, 4);
   const multimedia = [images.coast, images.tea, images.kolkata];
-  return <><Seo title={tx(lang,'বাংলার কণ্ঠস্বর, বিশ্বমঞ্চের দর্পণ','Voice of Bengal, Lens to the World')} description={tx(lang,'বাংলা ও বিশ্বের খবর, মানুষের গল্প এবং চিন্তার জায়গা।','Bengali and global news, human stories and a little room to think.')} lang={lang}/><Header/><Ticker/><main className="mx-auto max-w-[1280px] px-4 pb-4 sm:px-8">
-    <div className="flex items-center justify-between border-b border-border py-4 text-[11px] text-muted-foreground"><div className="flex items-center gap-2"><CalendarDays size={13}/><span data-testid="text-live-date">{new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }).format(clock)}</span></div><div className="font-mono" data-testid="text-live-clock">{clock.toLocaleTimeString(lang === 'bn' ? 'bn-BD' : 'en-GB',{hour:'2-digit',minute:'2-digit'})} BST</div></div>
-    <section className="grid gap-8 py-10 lg:grid-cols-[1.45fr_.8fr] lg:gap-12 lg:py-14">
-      {lead && <div className="enter"><StoryCard article={lead} featured/></div>}
-      <div className="lg:border-l lg:border-border lg:pl-8"><div className="mb-5 flex items-center justify-between"><div className="kicker">{tx(lang,'সম্পাদকের পছন্দ','Editor’s picks')}</div><Bookmark size={17} className="text-accent"/></div><div className="space-y-6">{secondary.slice(0,3).map((a,i)=><div key={a.id} className={`enter enter-${i+1}`}><StoryCard article={a}/></div>)}</div></div>
-    </section>
-    <section className="py-10"><SectionTitle title={tx(lang,'আজকের চোখ','The day, in focus')} kicker={tx(lang,'নির্বাচিত প্রতিবেদন','Curated reports')}/><div className="grid gap-x-7 gap-y-10 md:grid-cols-3">{secondary.slice(1,4).map(a=><StoryCard article={a} key={a.id}/>)}</div></section>
-    <section className="my-10 grid items-stretch overflow-hidden rounded-sm bg-primary text-primary-foreground md:grid-cols-[.8fr_1.2fr]"><div className="p-8 sm:p-12"><div className="kicker text-accent">{tx(lang,'শুনুন','Listen')}</div><h2 className="display mt-3 text-3xl font-bold leading-tight sm:text-4xl">{tx(lang,'শব্দের ভেতর দিয়ে বাংলাকে চিনুন।','Meet Bengal through its voices.')}</h2><p className="bn mt-4 max-w-sm text-sm leading-7 text-primary-foreground/70">{tx(lang,'সাপ্তাহিক পডকাস্টে থাকছে মানুষের মুখে বলা শহর, নদী ও স্মৃতির গল্প।','A weekly podcast of cities, rivers and memories, told in the voices of the people who live them.')}</p><button onClick={()=>notice(tx(lang,'পডকাস্ট শীঘ্রই আসছে','Podcast coming soon'))} className="mt-7 flex items-center gap-2 border-b border-accent pb-2 text-sm font-bold text-accent" data-testid="button-podcast"><Play size={15} fill="currentColor"/> {tx(lang,'প্রথম পর্ব শুনুন','Listen to episode one')}</button></div><div className="relative min-h-[260px] overflow-hidden"><img src={multimedia[slide]} className="absolute inset-0 h-full w-full object-cover opacity-70" alt=""/><div className="absolute inset-0 bg-primary/35"/><div className="absolute bottom-5 left-5 right-5 flex justify-between"><span className="font-mono text-[10px] tracking-widest text-white">WB AUDIO / ০১</span><div className="flex gap-2"><button onClick={()=>setSlide((slide+multimedia.length-1)%multimedia.length)} className="rounded-full bg-white/15 p-2 text-white" data-testid="button-carousel-prev"><ChevronLeft size={16}/></button><button onClick={()=>setSlide((slide+1)%multimedia.length)} className="rounded-full bg-white/15 p-2 text-white" data-testid="button-carousel-next"><ChevronRight size={16}/></button></div></div></div></section>
-    <section className="py-10"><SectionTitle title={tx(lang,'বিষয় ধরে পড়ুন','Read by subject')} kicker={tx(lang,'আরও গল্প','More stories')}/><div className="grid gap-10 md:grid-cols-2">{['জাতীয়','আন্তর্জাতিক','খেলাধুলা','প্রযুক্তি'].map((category)=><div key={category} className="border-t-2 border-primary pt-4"><div className="mb-5 flex items-center justify-between"><h3 className="display text-xl font-bold">{category}</h3><Link href={`/search?category=${encodeURIComponent(category)}`} className="text-accent" data-testid={`link-section-${category}`}><ArrowRight size={18}/></Link></div>{published.filter(a=>a.category===category).slice(0,1).map(a=><StoryCard article={a} key={a.id}/>)}</div>)}</div></section>
-    <section className="my-10 flex flex-col justify-between gap-6 border-y border-border py-10 sm:flex-row sm:items-center"><div><div className="kicker">{tx(lang,'সপ্তাহের চিঠি','The weekly letter')}</div><h2 className="display mt-2 text-3xl font-bold">{tx(lang,'ভালো গল্পের জন্য একটুখানি জায়গা রাখুন।','Make room for good stories.')}</h2><p className="bn mt-2 text-sm text-muted-foreground">{tx(lang,'সপ্তাহে একবার, ইনবক্সে আমাদের সেরা গল্প।','Our best stories, once a week.')}</p></div><form className="flex w-full max-w-md gap-2" onSubmit={e=>{e.preventDefault(); if(email) notice(tx(lang,'আপনাকে তালিকায় যোগ করা হয়েছে','You’re on the list')); setEmail('')}}><input value={email} onChange={e=>setEmail(e.target.value)} type="email" required placeholder={tx(lang,'আপনার ইমেল','Your email address')} className="min-w-0 flex-1 border-b border-foreground/30 bg-transparent px-1 py-3 text-sm outline-none focus:border-accent" data-testid="input-newsletter-email"/><button className="flex items-center gap-2 rounded-sm bg-primary px-4 py-2 text-xs font-bold text-primary-foreground" data-testid="button-newsletter-submit"><Send size={14}/><span>{tx(lang,'যোগ দিন','Subscribe')}</span></button></form></section>
-  </main><Footer/></>;
+
+  return <>
+    <Seo title={tx(lang,'বাংলার কণ্ঠস্বর, বিশ্বমঞ্চের দর্পণ','Voice of Bengal, Lens to the World')} description={tx(lang,'বাংলা ও বিশ্বের খবর, মানুষের গল্প এবং চিন্তার জায়গা।','Bengali and global news, human stories and a little room to think.')} lang={lang}/>
+    <Header/><Ticker/>
+    <main className="mx-auto max-w-[1280px] px-4 pb-4 sm:px-8">
+      <div className="flex items-center justify-between border-b border-border py-4 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-2"><CalendarDays size={13}/><span data-testid="text-live-date">{new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }).format(clock)}</span></div>
+        <div className="font-mono" data-testid="text-live-clock">{clock.toLocaleTimeString(lang === 'bn' ? 'bn-BD' : 'en-GB',{hour:'2-digit',minute:'2-digit'})} BST</div>
+      </div>
+      <section className="grid gap-8 py-10 lg:grid-cols-[1.45fr_.8fr] lg:gap-12 lg:py-14">
+        {lead && <div className="enter"><StoryCard article={lead} featured/></div>}
+        <div className="lg:border-l lg:border-border lg:pl-8">
+          <div className="mb-5 flex items-center justify-between"><div className="kicker">{tx(lang,'সম্পাদকের পছন্দ','Editor’s picks')}</div><Bookmark size={17} className="text-accent"/></div>
+          <div className="space-y-6">{secondary.slice(0,3).map((a,i)=><div key={a.id} className={`enter enter-${i+1}`}><StoryCard article={a}/></div>)}</div>
+        </div>
+      </section>
+      <section className="py-10">
+        <SectionTitle title={tx(lang,'আজকের চোখ','The day, in focus')} kicker={tx(lang,'নির্বাচিত প্রতিবেদন','Curated reports')}/>
+        <div className="grid gap-x-7 gap-y-10 md:grid-cols-3">{secondary.slice(1,4).map(a=><StoryCard article={a} key={a.id}/>)}</div>
+      </section>
+      <section className="my-10 grid items-stretch overflow-hidden rounded-sm bg-primary text-primary-foreground md:grid-cols-[.8fr_1.2fr]">
+        <div className="p-8 sm:p-12">
+          <div className="kicker text-accent">{tx(lang,'শুনুন','Listen')}</div>
+          <h2 className="display mt-3 text-3xl font-bold leading-tight sm:text-4xl">{tx(lang,'শব্দের ভেতর দিয়ে বাংলাকে চিনুন।','Meet Bengal through its voices.')}</h2>
+          <p className="bn mt-4 max-w-sm text-sm leading-7 text-primary-foreground/70">{tx(lang,'সাপ্তাহিক পডকাস্টে থাকছে মানুষের মুখে বলা শহর, নদী ও স্মৃতির গল্প।','A weekly podcast of cities, rivers and memories, told in the voices of the people who live them.')}</p>
+          <button onClick={()=>notice(tx(lang,'পডকাস্ট শীঘ্রই আসছে','Podcast coming soon'))} className="mt-7 flex items-center gap-2 border-b border-accent pb-2 text-sm font-bold text-accent" data-testid="button-podcast"><Play size={15} fill="currentColor"/> {tx(lang,'প্রথম পর্ব শুনুন','Listen to episode one')}</button>
+        </div>
+        <div className="relative min-h-[260px] overflow-hidden">
+          <img src={multimedia[slide]} className="absolute inset-0 h-full w-full object-cover opacity-70" alt=""/>
+          <div className="absolute inset-0 bg-primary/35"/>
+          <div className="absolute bottom-5 left-5 right-5 flex justify-between">
+            <span className="font-mono text-[10px] tracking-widest text-white">WB AUDIO / ০১</span>
+            <div className="flex gap-2">
+              <button onClick={()=>setSlide((slide+multimedia.length-1)%multimedia.length)} className="rounded-full bg-white/15 p-2 text-white"><ChevronLeft size={16}/></button>
+              <button onClick={()=>setSlide((slide+1)%multimedia.length)} className="rounded-full bg-white/15 p-2 text-white"><ChevronRight size={16}/></button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="py-10">
+        <SectionTitle title={tx(lang,'বিষয় ধরে পড়ুন','Read by subject')} kicker={tx(lang,'আরও গল্প','More stories')}/>
+        <div className="grid gap-10 md:grid-cols-2">
+          {['জাতীয়','আন্তর্জাতিক','খেলাধুলা','প্রযুক্তি'].map((category)=><div key={category} className="border-t-2 border-primary pt-4">
+            <div className="mb-5 flex items-center justify-between"><h3 className="display text-xl font-bold">{category}</h3><Link href={`/search?category=${encodeURIComponent(category)}`} className="text-accent"><ArrowRight size={18}/></Link></div>
+            {published.filter(a=>a.category===category).slice(0,1).map(a=><StoryCard article={a} key={a.id}/>)}
+          </div>)}
+        </div>
+      </section>
+      <section className="my-10 flex flex-col justify-between gap-6 border-y border-border py-10 sm:flex-row sm:items-center">
+        <div>
+          <div className="kicker">{tx(lang,'সপ্তাহের চিঠি','The weekly letter')}</div>
+          <h2 className="display mt-2 text-3xl font-bold">{tx(lang,'ভালো গল্পের জন্য একটুখানি জায়গা রাখুন।','Make room for good stories.')}</h2>
+          <p className="bn mt-2 text-sm text-muted-foreground">{tx(lang,'সপ্তাহে একবার, ইনবক্সে আমাদের সেরা গল্প।','Our best stories, once a week.')}</p>
+        </div>
+        <form className="flex w-full max-w-md gap-2" onSubmit={e=>{e.preventDefault(); if(email) notice(tx(lang,'আপনাকে তালিকায় যোগ করা হয়েছে','You’re on the list')); setEmail('')}}>
+          <input value={email} onChange={e=>setEmail(e.target.value)} type="email" required placeholder={tx(lang,'আপনার ইমেল','Your email address')} className="min-w-0 flex-1 border-b border-foreground/30 bg-transparent px-1 py-3 text-sm outline-none focus:border-accent"/>
+          <button className="flex items-center gap-2 rounded-sm bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"><Send size={14}/><span>{tx(lang,'যোগ দিন','Subscribe')}</span></button>
+        </form>
+      </section>
+    </main>
+    <Footer/>
+  </>;
 }
+
 function ArticlePage() {
-  const { id } = useParams<{id:string}>(); const { lang, articles, comments, setComments, notice } = useApp(); const article = articles.find(a=>a.id===id); const [comment, setComment] = useState(''); const [saved, setSaved] = useState(false);
+  const { id } = useParams<{id:string}>(); 
+  const { lang, articles, comments, setComments, notice } = useApp(); 
+  const article = articles.find(a=>a.id===id); 
+  const [comment, setComment] = useState(''); 
+  const [saved, setSaved] = useState(false);
+
   if (!article) return <NotFound/>;
-  const title = lang === 'bn' ? article.titleBn : article.titleEn; const content = lang === 'bn' ? article.contentBn : article.contentEn; const related = articles.filter(a=>a.id!==id && a.status==='published').slice(0,3);
+  const title = lang === 'bn' ? article.titleBn : article.titleEn; 
+  const content = lang === 'bn' ? article.contentBn : article.contentEn; 
+  const related = articles.filter(a=>a.id!==id && a.status==='published').slice(0,3);
   const copy = () => { navigator.clipboard?.writeText(location.href); notice(tx(lang,'লিঙ্ক কপি হয়েছে','Link copied')); };
-  return <><Seo title={title} description={lang === 'bn' ? article.excerptBn : article.excerptEn} image={article.image} type="article" path={`/article/${article.id}`} lang={lang}/><Header/><div className="fixed left-0 right-0 top-16 z-30 h-0.5 bg-accent" data-testid="progress-article"/><main className="mx-auto max-w-[1000px] px-4 pb-20 sm:px-8"><div className="mx-auto max-w-3xl py-10 sm:py-16"><div className="kicker">{article.category} · {article.readTime} min read</div><h1 className="display mt-4 text-4xl font-bold leading-[1.12] sm:text-6xl" data-testid="text-article-title">{title}</h1><p className="bn mt-5 text-xl leading-9 text-muted-foreground">{lang === 'bn' ? article.excerptBn : article.excerptEn}</p><div className="mt-7 flex flex-wrap items-center gap-4 border-y border-border py-4 text-xs"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary font-bold text-primary">{article.authorName.slice(0,2)}</span><span className="font-bold">{article.authorName}</span><span className="text-muted-foreground">{formatDate(article.createdAt,lang)}</span><span className="ml-auto flex gap-1"><button onClick={()=>setSaved(!saved)} className={`rounded-full p-2 ${saved?'bg-accent text-accent-foreground':'hover:bg-secondary'}`} data-testid="button-save-article"><Bookmark size={16} fill={saved?'currentColor':'none'}/></button><button onClick={copy} className="rounded-full p-2 hover:bg-secondary" data-testid="button-copy-article"><Copy size={16}/></button><button onClick={()=>notice(tx(lang,'শেয়ার অপশন প্রস্তুত','Share options ready'))} className="rounded-full p-2 hover:bg-secondary" data-testid="button-share-article"><Share2 size={16}/></button></span></div></div><img src={article.image} alt={title} className="mx-auto aspect-[16/8] w-full object-cover"/><div className="mx-auto grid max-w-3xl gap-10 py-10 lg:grid-cols-[1fr_160px]"><article className="bn prose prose-lg max-w-none leading-[2] dark:prose-invert">{content.split('\\n\\n').map((p,i)=><p key={i}>{p}</p>)}<blockquote className="border-l-4 border-accent pl-5 text-2xl font-medium leading-relaxed text-primary">{tx(lang,'“খবর মানে শুধু যা ঘটেছে তা নয়, মানুষের ভিতর যা বদলেছে তারও খোঁজ।”','“News is not only what happened, but also what changed inside people.”')}</blockquote><p>{tx(lang,'আমরা এই গল্পগুলির পাশে থাকব—প্রশ্ন করব, শুনব, আবার ফিরে আসব। কারণ একটি জায়গাকে বোঝার জন্য একটির বেশি গল্পের প্রয়োজন হয়।','We will stay with these stories—ask, listen, and return. Because understanding a place takes more than one story.')}</p></article><aside className="hidden lg:block"><div className="sticky top-24 border-l border-border pl-5"><div className="kicker">On this page</div><div className="mt-4 space-y-3 text-xs text-muted-foreground"><div>01 · The river</div><div>02 · People and place</div><div>03 · A new map</div></div></div></aside></div><div className="mx-auto max-w-3xl border-t border-border py-7"><div className="flex items-center gap-4"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{article.authorName.slice(0,2)}</span><div><div className="text-sm font-bold">{article.authorName}</div><p className="bn mt-1 text-sm text-muted-foreground">{article.authorName === 'ঋদ্ধি সেন' ? 'উপকূল, জলবায়ু ও মানুষের গল্প লেখেন।' : 'শহর, সংস্কৃতি ও মানুষের জীবনের গল্প করেন।'}</p></div></div></div><div className="mx-auto max-w-3xl border-t border-border pt-8"><div className="flex items-center justify-between"><h2 className="display text-2xl font-bold">{tx(lang,'আলাপ করুন','Join the conversation')} <span className="font-sans text-sm text-muted-foreground">({comments.filter(c=>c.articleId===id).length})</span></h2></div><form className="mt-5 flex gap-3" onSubmit={e=>{e.preventDefault(); if(!comment.trim()) return; setComments(cs=>[...cs,{id:`c${Date.now()}`,articleId:id,userName:'আপনি',text:comment,createdAt:'এইমাত্র'}]);setComment('')}}><input value={comment} onChange={e=>setComment(e.target.value)} className="min-w-0 flex-1 rounded-sm border border-border bg-transparent px-4 py-3 text-sm outline-none focus:border-primary" placeholder={tx(lang,'আপনার মতামত লিখুন…','Write a comment…')} data-testid="input-comment"/><button className="rounded-sm bg-primary px-4 text-primary-foreground" data-testid="button-submit-comment"><Send size={16}/></button></form><div className="mt-6 space-y-5">{comments.filter(c=>c.articleId===id).map(c=><div className="border-b border-border pb-5" key={c.id} data-testid={`comment-${c.id}`}><div className="flex justify-between text-xs font-bold"><span>{c.userName}</span><span className="font-normal text-muted-foreground">{c.createdAt}</span></div><p className="bn mt-2 text-sm leading-7 text-muted-foreground">{c.text}</p></div>)}</div></div><section className="mx-auto mt-16 max-w-3xl"><SectionTitle title={tx(lang,'আরও পড়ুন','Read next')} kicker={tx(lang,'সম্পর্কিত গল্প','Related stories')}/><div className="grid gap-6 sm:grid-cols-3">{related.map(a=><StoryCard article={a} key={a.id}/>)}</div></section></main><Footer/></>;
+
+  return <>
+    <Seo title={title} description={lang === 'bn' ? article.excerptBn : article.excerptEn} image={article.image} type="article" path={`/article/${article.id}`} lang={lang}/>
+    <Header/>
+    <div className="fixed left-0 right-0 top-16 z-30 h-0.5 bg-accent"/>
+    <main className="mx-auto max-w-[1000px] px-4 pb-20 sm:px-8">
+      <div className="mx-auto max-w-3xl py-10 sm:py-16">
+        <div className="kicker">{article.category} · {article.readTime} min read</div>
+        <h1 className="display mt-4 text-4xl font-bold leading-[1.12] sm:text-6xl">{title}</h1>
+        <p className="bn mt-5 text-xl leading-9 text-muted-foreground">{lang === 'bn' ? article.excerptBn : article.excerptEn}</p>
+        <div className="mt-7 flex flex-wrap items-center gap-4 border-y border-border py-4 text-xs">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary font-bold text-primary">{article.authorName.slice(0,2)}</span>
+          <span className="font-bold">{article.authorName}</span>
+          <span className="text-muted-foreground">{formatDate(article.createdAt,lang)}</span>
+          <span className="ml-auto flex gap-1">
+            <button onClick={()=>setSaved(!saved)} className={`rounded-full p-2 ${saved?'bg-accent text-accent-foreground':'hover:bg-secondary'}`}><Bookmark size={16} fill={saved?'currentColor':'none'}/></button>
+            <button onClick={copy} className="rounded-full p-2 hover:bg-secondary"><Copy size={16}/></button>
+            <button onClick={()=>notice(tx(lang,'শেয়ার অপশন প্রস্তুত','Share options ready'))} className="rounded-full p-2 hover:bg-secondary"><Share2 size={16}/></button>
+          </span>
+        </div>
+      </div>
+      <img src={article.image || images.river} alt={title} className="mx-auto aspect-[16/8] w-full object-cover"/>
+      <div className="mx-auto grid max-w-3xl gap-10 py-10 lg:grid-cols-[1fr_160px]">
+        <article className="bn prose prose-lg max-w-none leading-[2] dark:prose-invert">
+          {content.split('\\n\\n').map((p,i)=><p key={i}>{p}</p>)}
+          <blockquote className="border-l-4 border-accent pl-5 text-2xl font-medium leading-relaxed text-primary">{tx(lang,'“খবর মানে শুধু যা ঘটেছে তা নয়, মানুষের ভিতর যা বদলেছে তারও খোঁজ।”','“News is not only what happened, but also what changed inside people.”')}</blockquote>
+        </article>
+      </div>
+      <div className="mx-auto max-w-3xl border-t border-border pt-8">
+        <h2 className="display text-2xl font-bold">{tx(lang,'মন্তব্য','Comments')} ({comments.filter(c=>c.articleId===id).length})</h2>
+        <form className="mt-5 flex gap-3" onSubmit={e=>{e.preventDefault(); if(!comment.trim()) return; setComments(cs=>[...cs,{id:`c${Date.now()}`,articleId:id,userName:'আপনি',text:comment,createdAt:'এইমাত্র'}]);setComment('')}}>
+          <input value={comment} onChange={e=>setComment(e.target.value)} className="min-w-0 flex-1 rounded-sm border border-border bg-transparent px-4 py-3 text-sm outline-none focus:border-primary" placeholder={tx(lang,'আপনার মতামত লিখুন…','Write a comment…')}/>
+          <button className="rounded-sm bg-primary px-4 text-primary-foreground"><Send size={16}/></button>
+        </form>
+        <div className="mt-6 space-y-5">{comments.filter(c=>c.articleId===id).map(c=><div className="border-b border-border pb-5" key={c.id}><div className="flex justify-between text-xs font-bold"><span>{c.userName}</span><span className="font-normal text-muted-foreground">{c.createdAt}</span></div><p className="bn mt-2 text-sm leading-7 text-muted-foreground">{c.text}</p></div>)}</div>
+      </div>
+      <section className="mx-auto mt-16 max-w-3xl">
+        <SectionTitle title={tx(lang,'আরও পড়ুন','Read next')} kicker={tx(lang,'সম্পর্কিত গল্প','Related stories')}/>
+        <div className="grid gap-6 sm:grid-cols-3">{related.map(a=><StoryCard article={a} key={a.id}/>)}</div>
+      </section>
+    </main>
+    <Footer/>
+  </>;
 }
+
 function SearchPage() {
-  const { lang, articles } = useApp(); const initialCategory = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('category') || 'সব'; const [q,setQ]=useState(''); const [category,setCategory]=useState(initialCategory); const categories=['সব', ...categoryOptions.map((option) => option.bn), 'সমাজ','শহর','সংস্কৃতি','জীবন','ভ্রমণ','শিল্প','ইতিহাস'];
+  const { lang, articles } = useApp(); 
+  const initialCategory = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('category') || 'সব'; 
+  const [q,setQ]=useState(''); 
+  const [category,setCategory]=useState(initialCategory); 
+  const categories=['সব', ...categoryOptions.map((option) => option.bn)];
   const results=articles.filter(a=>a.status==='published' && (category==='সব'||a.category===category) && (!q.trim() || searchableArticleText(a).includes(q.trim().toLocaleLowerCase())));
   const labelForCategory = (value: string) => value === 'সব' ? tx(lang,'সব','All') : categoryOptions.find((option) => option.bn === value)?.[lang === 'bn' ? 'bn' : 'en'] || value;
-  return <><Seo title={tx(lang,'আর্কাইভ ও অনুসন্ধান','Archive & search')} description={tx(lang,'বাংলা ও ইংরেজি শিরোনাম, বিষয় এবং গল্পের ভেতর অনুসন্ধান করুন।','Search Bengali and English headlines, subjects and full story text.')} lang={lang}/><Header/><main className="mx-auto max-w-[1100px] px-4 py-10 sm:px-8 sm:py-16"><div className="max-w-2xl"><div className="kicker">{tx(lang,'আর্কাইভ ও অনুসন্ধান','Archive & search')}</div><h1 className="display mt-3 text-5xl font-bold">{tx(lang,'আপনার গল্প খুঁজুন।','Find your story.')}</h1></div><div className="mt-10 flex items-center gap-3 border-b-2 border-primary pb-3"><Search size={20}/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder={tx(lang,'শহর, মানুষ, বিষয়…','Search cities, people, ideas…')} className="w-full bg-transparent text-lg outline-none" data-testid="input-search"/></div><div className="my-7 flex gap-2 overflow-x-auto pb-2">{categories.map(c=><button key={c} onClick={()=>setCategory(c)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold ${category===c?'border-primary bg-primary text-primary-foreground':'border-border hover:border-primary'}`} data-testid={`button-filter-${c}`}>{labelForCategory(c)}</button>)}</div><div className="mb-5 flex items-center justify-between text-xs text-muted-foreground"><span data-testid="text-search-count">{results.length} {tx(lang,'টি গল্প','stories')}</span><span>{q && `“${q}”`}</span></div>{results.length ? <div className="grid gap-x-8 gap-y-10 md:grid-cols-2">{results.map(a=><StoryCard article={a} key={a.id}/>)}</div> : <div className="rounded-sm border border-dashed border-border py-20 text-center"><Search className="mx-auto text-muted-foreground" size={30}/><h2 className="display mt-4 text-2xl font-bold">{tx(lang,'কোনও গল্প মেলেনি','No stories found')}</h2><p className="mt-2 text-sm text-muted-foreground">{tx(lang,'অন্য কোনও শব্দ দিয়ে চেষ্টা করুন।','Try another search term.')}</p></div>}</main><Footer/></>;
-}
-function LoginPage() {
-  const { lang, setSession, notice } = useApp(); const [,navigate]=useLocation(); const [email,setEmail]=useState(''); const [password,setPassword]=useState('');
-  const login=(role:'admin'|'reporter')=>{const s=role==='admin'?{role:'admin' as const,name:'অদিতি রায়',id:'admin'}:{role:'reporter' as const,name:'ঋদ্ধি সেন',id:'r1'};setSession(s);notice(tx(lang,'স্বাগতম, '+s.name,'Welcome, '+s.name));navigate(role==='admin'?'/admin':'/reporter')};
-  return <><Seo title={tx(lang,'সম্পাদকীয় ডেস্কে প্রবেশ করুন','Enter the editorial desk')} description={tx(lang,'The Weekly Bengal-এর ডেমো সম্পাদকীয় ডেস্কে প্রবেশ করুন।','Enter The Weekly Bengal demo editorial desk.')} lang={lang}/><Header/><main className="flex min-h-[calc(100dvh-64px)] items-center justify-center px-4 py-14"><div className="w-full max-w-md"><div className="mb-9 text-center"><span className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground"><Newspaper size={23}/></span><h1 className="display mt-5 text-4xl font-bold">{tx(lang,'ফিরে আসুন','Welcome back')}</h1><p className="mt-2 text-sm text-muted-foreground">{tx(lang,'সম্পাদকীয় ডেস্কে প্রবেশ করুন','Enter the editorial desk')}</p></div><div className="rounded-sm border border-border bg-card p-6 editorial-shadow sm:p-8"><label className="kicker">Email</label><input value={email} onChange={e=>setEmail(e.target.value)} type="email" className="mt-2 mb-5 w-full border-b border-border bg-transparent px-1 py-3 outline-none focus:border-primary" placeholder="you@weeklybengal.news" data-testid="input-login-email"/><label className="kicker">Password</label><input value={password} onChange={e=>setPassword(e.target.value)} type="password" className="mt-2 w-full border-b border-border bg-transparent px-1 py-3 outline-none focus:border-primary" placeholder="••••••••" data-testid="input-login-password"/><button onClick={()=>login('reporter')} className="mt-7 w-full rounded-sm bg-primary py-3 text-sm font-bold text-primary-foreground" data-testid="button-login">প্রবেশ করুন / Sign in</button><div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-widest text-muted-foreground"><span className="h-px flex-1 bg-border"/>Demo access<span className="h-px flex-1 bg-border"/></div><div className="grid grid-cols-2 gap-3"><button onClick={()=>login('admin')} className="rounded-sm border border-border py-3 text-xs font-bold hover:border-primary" data-testid="button-demo-admin"><ShieldCheck size={15} className="mx-auto mb-1 text-accent"/>Admin access</button><button onClick={()=>login('reporter')} className="rounded-sm border border-border py-3 text-xs font-bold hover:border-primary" data-testid="button-demo-reporter"><PenLine size={15} className="mx-auto mb-1 text-accent"/>Reporter access</button></div></div></div></main></>;
-}
-function StatusBadge({ status }: {status: Status}) { return <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status==='published'?'bg-primary/10 text-primary':status==='pending'?'bg-accent/15 text-accent':'bg-muted text-muted-foreground'}`}>{status}</span>; }
-function Stat({ icon:Icon, label, value, change }: {icon: typeof BarChart3; label:string; value:string; change?:string}) { return <div className="rounded-sm border border-border bg-card p-5"><Icon size={18} className="text-accent"/><div className="mt-5 text-3xl font-bold tracking-tight">{value}</div><div className="mt-1 text-xs text-muted-foreground">{label}</div>{change&&<div className="mt-3 text-[10px] font-bold text-primary">{change}</div>}</div>; }
-function AdminPage() {
-  const { lang, articles, setArticles, reporters, setReporters, notice, setSession } = useApp(); const [tab,setTab]=useState<'overview'|'articles'|'reporters'>('overview'); const [,navigate]=useLocation(); const [editing,setEditing]=useState<Article|null>(null); const [showForm,setShowForm]=useState(false);
-  const remove=(id:string)=>{if(confirm(tx(lang,'এই গল্পটি মুছে ফেলবেন?','Delete this story?'))) {setArticles(as=>as.filter(a=>a.id!==id));notice(tx(lang,'গল্প মুছে ফেলা হয়েছে','Story deleted'))}};
-  const updateStatus=(id:string,status:Status)=>{setArticles(as=>as.map(a=>a.id===id?{...a,status}:a));notice(status==='published'?tx(lang,'গল্প প্রকাশিত হয়েছে','Story published'):tx(lang,'অবস্থা আপডেট হয়েছে','Status updated'))};
-  return <><Seo title={tx(lang,'নিউজরুম নিয়ন্ত্রণ','Newsroom control')} description={tx(lang,'The Weekly Bengal-এর প্রকাশনা, গল্প এবং প্রতিবেদক ব্যবস্থাপনা।','Manage The Weekly Bengal stories, publishing queue and reporters.')} lang={lang}/><Header/><main className="mx-auto max-w-[1280px] px-4 py-8 sm:px-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><div className="kicker">Editorial desk · Admin</div><h1 className="display mt-2 text-4xl font-bold">{tx(lang,'নিউজরুম নিয়ন্ত্রণ','Newsroom control')}</h1><p className="mt-2 text-sm text-muted-foreground">{tx(lang,'এক নজরে পুরো প্রকাশনার ছন্দ।','The rhythm of the whole publication, at a glance.')}</p></div><button onClick={()=>{setSession(null);navigate('/')}} className="text-xs font-bold text-muted-foreground hover:text-accent" data-testid="button-logout">Log out</button></div><div className="my-8 flex gap-6 overflow-x-auto border-b border-border">{[['overview','Overview'],['articles','Articles'],['reporters','Reporters']].map(([v,l])=><button key={v} onClick={()=>setTab(v as typeof tab)} className={`border-b-2 px-1 pb-3 text-sm font-bold ${tab===v?'border-accent text-accent':'border-transparent text-muted-foreground'}`} data-testid={`button-admin-tab-${v}`}>{l}</button>)}</div>{tab==='overview'&&<><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Stat icon={TrendingUp} label="Published stories" value={String(articles.filter(a=>a.status==='published').length)} change="+12% this month"/><Stat icon={BarChart3} label="Total readership" value="47.2K" change="+8.4% this week"/><Stat icon={Clock3} label="Pending review" value={String(articles.filter(a=>a.status==='pending').length)} change="Needs attention"/><Stat icon={Users} label="Active reporters" value={String(reporters.filter(r=>r.active).length)} /></div><div className="mt-10 grid gap-8 lg:grid-cols-[1.2fr_.8fr]"><div><SectionTitle title="Recent stories" kicker="Publishing queue" href="/admin"/><div className="space-y-3">{articles.slice(0,5).map(a=><AdminRow article={a} onEdit={()=>{setEditing(a);setShowForm(true)}} onDelete={()=>remove(a.id)} onPublish={()=>updateStatus(a.id,'published')} key={a.id}/>)}</div></div><div><SectionTitle title="The team" kicker="Byline desk" href="/admin"/><div className="space-y-4">{reporters.slice(0,3).map(r=><div key={r.id} className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-bold text-primary">{r.avatar}</span><div className="flex-1"><div className="text-sm font-bold">{r.name}</div><div className="text-xs text-muted-foreground">{r.role}</div></div><span className={`h-2 w-2 rounded-full ${r.active?'bg-primary':'bg-muted-foreground'}`}/></div>)}</div></div></div></>}{tab==='articles'&&<><div className="mb-5 flex justify-end"><button onClick={()=>{setEditing(null);setShowForm(true)}} className="flex items-center gap-2 rounded-sm bg-primary px-4 py-2 text-sm font-bold text-primary-foreground" data-testid="button-new-article"><Plus size={16}/> New story</button></div><div className="overflow-x-auto rounded-sm border border-border"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-muted text-xs text-muted-foreground"><tr><th className="p-4">Story</th><th>Category</th><th>Status</th><th>Views</th><th className="p-4 text-right">Actions</th></tr></thead><tbody>{articles.map(a=><AdminRow article={a} onEdit={()=>{setEditing(a);setShowForm(true)}} onDelete={()=>remove(a.id)} onPublish={()=>updateStatus(a.id,'published')} table key={a.id}/>)}</tbody></table></div></>}{tab==='reporters'&&<ReportersTab reporters={reporters} setReporters={setReporters} notice={notice}/>}</main>{showForm&&<ArticleForm article={editing} onClose={()=>setShowForm(false)} onSave={(a)=>{setArticles(as=>editing?as.map(x=>x.id===a.id?a:x):[a,...as]);setShowForm(false);notice(tx(lang,'গল্প সংরক্ষিত হয়েছে','Story saved'))}}/>}</>;
-}
-function AdminRow({article,onEdit,onDelete,onPublish,table=false}:{article:Article;onEdit:()=>void;onDelete:()=>void;onPublish:()=>void;table?:boolean}) { const {lang}=useApp(); if(table)return <tr className="border-t border-border"><td className="p-4"><div className="flex items-center gap-3"><img src={article.image} className="h-10 w-14 object-cover" alt=""/><div><div className="font-bold">{lang==='bn'?article.titleBn:article.titleEn}</div><div className="text-xs text-muted-foreground">{article.authorName}</div></div></div></td><td>{article.category}</td><td><StatusBadge status={article.status}/></td><td>{article.views.toLocaleString()}</td><td className="p-4"><div className="flex justify-end gap-1"><button onClick={onEdit} className="rounded p-2 hover:bg-secondary" data-testid={`button-edit-${article.id}`}><Edit3 size={15}/></button>{article.status!=='published'&&<button onClick={onPublish} className="rounded p-2 text-primary hover:bg-secondary" data-testid={`button-publish-${article.id}`}><Check size={15}/></button>}<button onClick={onDelete} className="rounded p-2 text-destructive hover:bg-secondary" data-testid={`button-delete-${article.id}`}><Trash2 size={15}/></button></div></td></tr>; return <div className="flex items-center gap-4 rounded-sm border border-border p-3"><img src={article.image} className="h-12 w-16 object-cover" alt=""/><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{lang==='bn'?article.titleBn:article.titleEn}</div><div className="mt-1 flex gap-2 text-xs text-muted-foreground"><span>{article.authorName}</span><StatusBadge status={article.status}/></div></div><div className="hidden items-center gap-1 sm:flex"><button onClick={onEdit} className="rounded p-2 hover:bg-secondary" data-testid={`button-edit-row-${article.id}`}><Edit3 size={15}/></button>{article.status!=='published'&&<button onClick={onPublish} className="rounded p-2 text-primary hover:bg-secondary" data-testid={`button-publish-row-${article.id}`}><Check size={15}/></button>}<button onClick={onDelete} className="rounded p-2 text-destructive hover:bg-secondary" data-testid={`button-delete-row-${article.id}`}><Trash2 size={15}/></button></div></div>; }
-function ReportersTab({reporters,setReporters,notice}:{reporters:Reporter[];setReporters:Dispatch<SetStateAction<Reporter[]>>;notice:(s:string)=>void}) { return <div className="grid gap-4 sm:grid-cols-2">{reporters.map(r=><div className="rounded-sm border border-border bg-card p-5" key={r.id}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary font-bold text-primary">{r.avatar}</span><div><div className="font-bold">{r.name}</div><div className="text-xs text-muted-foreground">{r.role}</div></div></div><button onClick={()=>{setReporters(rs=>rs.map(x=>x.id===r.id?{...x,active:!x.active}:x));notice(r.active?'Reporter paused':'Reporter activated')}} className={`h-2.5 w-2.5 rounded-full ${r.active?'bg-primary':'bg-muted-foreground'}`} data-testid={`button-toggle-reporter-${r.id}`}/></div><p className="bn mt-5 text-sm leading-7 text-muted-foreground">{r.bio}</p><div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">{r.email}</div></div>)}</div>; }
-function ArticleForm({article,onClose,onSave}:{article:Article|null;onClose:()=>void;onSave:(a:Article)=>void}) { const {lang,session}=useApp(); const [titleBn,setTitleBn]=useState(article?.titleBn||''); const [titleEn,setTitleEn]=useState(article?.titleEn||''); const [excerptBn,setExcerptBn]=useState(article?.excerptBn||''); const [contentBn,setContentBn]=useState(article?.contentBn||''); const [category,setCategory]=useState(article?.category||'সংস্কৃতি'); const [status,setStatus]=useState<Status>(article?.status||'draft'); const submit=(e:FormEvent)=>{e.preventDefault();onSave({...article,id:article?.id||`a${Date.now()}`,authorId:article?.authorId||session?.id||'r1',authorName:article?.authorName||session?.name||'রিপোর্টার',titleBn,titleEn,excerptBn,excerptEn:excerptBn,contentBn,contentEn:contentBn,category,image:article?.image||images.books,status,isBreaking:article?.isBreaking||false,isLead:article?.isLead||false,views:article?.views||0,createdAt:article?.createdAt||new Date().toISOString(),readTime:article?.readTime||5})}; return <div className="fixed inset-0 z-50 flex items-end justify-center bg-sidebar/50 p-0 sm:items-center sm:p-6"><form onSubmit={submit} className="max-h-[95dvh] w-full max-w-2xl overflow-y-auto rounded-t-sm bg-card p-6 shadow-2xl sm:rounded-sm sm:p-8"><div className="flex items-center justify-between"><div><div className="kicker">{article?'Edit story':'New story'}</div><h2 className="display mt-1 text-2xl font-bold">{article?'গল্প সম্পাদনা':'নতুন গল্প'}</h2></div><button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-secondary" data-testid="button-close-editor"><X size={18}/></button></div><div className="mt-7 grid gap-5"><label className="text-xs font-bold">বাংলা শিরোনাম<input required value={titleBn} onChange={e=>setTitleBn(e.target.value)} className="mt-2 w-full border-b border-border bg-transparent py-2 text-lg outline-none focus:border-primary" data-testid="input-editor-title-bn"/></label><label className="text-xs font-bold">English title<input value={titleEn} onChange={e=>setTitleEn(e.target.value)} className="mt-2 w-full border-b border-border bg-transparent py-2 text-lg outline-none focus:border-primary" data-testid="input-editor-title-en"/></label><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-bold">Category<select value={category} onChange={e=>setCategory(e.target.value)} className="mt-2 w-full border border-border bg-transparent p-3" data-testid="select-editor-category">{['সমাজ','শহর','সংস্কৃতি','জীবন','ভ্রমণ','শিল্প','ইতিহাস'].map(x=><option key={x}>{x}</option>)}</select></label><label className="text-xs font-bold">Status<select value={status} onChange={e=>setStatus(e.target.value as Status)} className="mt-2 w-full border border-border bg-transparent p-3" data-testid="select-editor-status"><option value="draft">Draft</option><option value="pending">Pending review</option><option value="published">Published</option></select></label></div><label className="text-xs font-bold">Excerpt<textarea required value={excerptBn} onChange={e=>setExcerptBn(e.target.value)} rows={2} className="mt-2 w-full resize-none border border-border bg-transparent p-3 text-sm outline-none focus:border-primary" data-testid="textarea-editor-excerpt"/></label><label className="text-xs font-bold">Story body<textarea required value={contentBn} onChange={e=>setContentBn(e.target.value)} rows={7} className="mt-2 w-full resize-y border border-border bg-transparent p-3 text-sm leading-7 outline-none focus:border-primary" data-testid="textarea-editor-content"/></label></div><div className="mt-7 flex justify-end gap-3"><button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold" data-testid="button-cancel-editor">Cancel</button><button className="rounded-sm bg-primary px-5 py-2 text-sm font-bold text-primary-foreground" data-testid="button-save-editor">Save story</button></div></form></div>; }
-function ReporterPage() {
-  const { lang, articles, setArticles, session, notice, setSession }=useApp(); const [,navigate]=useLocation(); const [showForm,setShowForm]=useState(false); const [editing,setEditing]=useState<Article|null>(null); const mine=articles.filter(a=>a.authorId===session?.id);
-  const save=(a:Article)=>{setArticles(as=>editing?as.map(x=>x.id===a.id?a:x):[a,...as]);setShowForm(false);notice(tx(lang,'খসড়া সংরক্ষিত হয়েছে','Draft saved'))};
-  return <><Seo title={tx(lang,'আমার ডেস্ক','My desk')} description={tx(lang,'প্রতিবেদকের গল্প, খসড়া এবং পর্যালোচনার ব্যক্তিগত ডেস্ক।','A reporter workspace for stories, drafts and editorial review.')} lang={lang}/><Header/><main className="mx-auto max-w-[1100px] px-4 py-8 sm:px-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><div className="kicker">Reporter workspace</div><h1 className="display mt-2 text-4xl font-bold">{tx(lang,'আমার ডেস্ক','My desk')}</h1><p className="mt-2 text-sm text-muted-foreground">{tx(lang,'আপনার গল্পের যাত্রা এক জায়গায়।','Your stories, all in one place.')}</p></div><div className="flex gap-2"><button onClick={()=>{setEditing(null);setShowForm(true)}} className="flex items-center gap-2 rounded-sm bg-accent px-4 py-2 text-sm font-bold text-accent-foreground" data-testid="button-reporter-new"><Plus size={16}/> New story</button><button onClick={()=>{setSession(null);navigate('/')}} className="px-3 text-xs font-bold text-muted-foreground" data-testid="button-reporter-logout">Log out</button></div></div><div className="my-8 grid gap-4 sm:grid-cols-3"><Stat icon={FileText} label="My stories" value={String(mine.length)} /><Stat icon={Clock3} label="Pending review" value={String(mine.filter(a=>a.status==='pending').length)} /><Stat icon={TrendingUp} label="Total views" value={mine.reduce((s,a)=>s+a.views,0).toLocaleString()} /></div><div className="border-b border-border"><div className="kicker mb-3">Your newsroom</div><h2 className="display pb-3 text-2xl font-bold">Stories</h2></div><div className="mt-5 space-y-3">{mine.length?mine.map(a=><AdminRow article={a} key={a.id} onEdit={()=>{setEditing(a);setShowForm(true)}} onDelete={()=>setArticles(as=>as.filter(x=>x.id!==a.id))} onPublish={()=>{setArticles(as=>as.map(x=>x.id===a.id?{...x,status:'pending'}:x));notice('Sent for review')}}/>):<div className="border border-dashed border-border py-16 text-center"><PenLine className="mx-auto text-muted-foreground" size={28}/><p className="mt-3 text-sm text-muted-foreground">আপনার প্রথম গল্পটি লিখুন।</p></div>}</div></main>{showForm&&<ArticleForm article={editing} onClose={()=>setShowForm(false)} onSave={save}/>}</>;
-}
-function NotFound() { const { lang } = useApp(); return <><Seo title={tx(lang,'পাতাটি পাওয়া যায়নি','Page not found')} description={tx(lang,'এই পাতাটি The Weekly Bengal-এ পাওয়া যায়নি।','This page could not be found on The Weekly Bengal.')} lang={lang}/><Header/><main className="flex min-h-[60dvh] items-center justify-center px-5 text-center"><div><div className="kicker">404 / Not found</div><h1 className="display mt-3 text-5xl font-bold">এই পাতাটি নেই।</h1><Link href="/" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary" data-testid="link-back-home"><ChevronLeft size={16}/> প্রথম পাতায় ফিরুন</Link></div></main></>; }
 
-function Router() { return <ErrorBoundary resetKey={location.pathname}><Switch><Route path="/" component={Home}/><Route path="/article/:id" component={ArticlePage}/><Route path="/search" component={SearchPage}/><Route path="/login" component={LoginPage}/><Route path="/admin" component={AdminPage}/><Route path="/reporter" component={ReporterPage}/><Route component={NotFound}/></Switch></ErrorBoundary>; }
+  return <>
+    <Seo title={tx(lang,'আর্কাইভ ও অনুসন্ধান','Archive & search')} description={tx(lang,'খবর ও প্রতিবেদনের ভেতর অনুসন্ধান করুন।','Search headlines, subjects and full story text.')} lang={lang}/>
+    <Header/>
+    <main className="mx-auto max-w-[1100px] px-4 py-10 sm:px-8 sm:py-16">
+      <div className="max-w-2xl"><div className="kicker">{tx(lang,'আর্কাইভ ও অনুসন্ধান','Archive & search')}</div><h1 className="display mt-3 text-5xl font-bold">{tx(lang,'আপনার গল্প খুঁজুন।','Find your story.')}</h1></div>
+      <div className="mt-10 flex items-center gap-3 border-b-2 border-primary pb-3"><Search size={20}/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder={tx(lang,'খবর, মানুষ, বিষয়…','Search cities, people, ideas…')} className="w-full bg-transparent text-lg outline-none"/></div>
+      <div className="my-7 flex gap-2 overflow-x-auto pb-2">{categories.map(c=><button key={c} onClick={()=>setCategory(c)} className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold ${category===c?'border-primary bg-primary text-primary-foreground':'border-border hover:border-primary'}`}>{labelForCategory(c)}</button>)}</div>
+      <div className="mb-5 flex items-center justify-between text-xs text-muted-foreground"><span>{results.length} {tx(lang,'টি গল্প','stories')}</span><span>{q && `“${q}”`}</span></div>
+      {results.length ? <div className="grid gap-x-8 gap-y-10 md:grid-cols-2">{results.map(a=><StoryCard article={a} key={a.id}/>)}</div> : <div className="rounded-sm border border-dashed border-border py-20 text-center"><Search className="mx-auto text-muted-foreground" size={30}/><h2 className="display mt-4 text-2xl font-bold">{tx(lang,'কোনও গল্প মেলেনি','No stories found')}</h2></div>}
+    </main>
+    <Footer/>
+  </>;
+}
+
+function LoginPage() {
+  const { lang, setSession, notice } = useApp(); 
+  const [,navigate]=useLocation(); 
+  const [email,setEmail]=useState(''); 
+  const [password,setPassword]=useState('');
+  const login=(role:'admin'|'reporter')=>{
+    const s=role==='admin'?{role:'admin' as const,name:'অদিতি রায়',id:'admin'}:{role:'reporter' as const,name:'ঋদ্ধি সেন',id:'r1'};
+    setSession(s);
+    notice(tx(lang,'স্বাগতম, '+s.name,'Welcome, '+s.name));
+    navigate(role==='admin'?'/admin':'/reporter');
+  };
+
+  return <>
+    <Seo title={tx(lang,'সম্পাদকীয় ডেস্কে প্রবেশ করুন','Enter the editorial desk')} description="Enter desk" lang={lang}/>
+    <Header/>
+    <main className="flex min-h-[calc(100dvh-64px)] items-center justify-center px-4 py-14">
+      <div className="w-full max-w-md">
+        <div className="mb-9 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground"><Newspaper size={23}/></span>
+          <h1 className="display mt-5 text-4xl font-bold">{tx(lang,'ফিরে আসুন','Welcome back')}</h1>
+        </div>
+        <div className="rounded-sm border border-border bg-card p-6 editorial-shadow sm:p-8">
+          <label className="kicker">Email</label>
+          <input value={email} onChange={e=>setEmail(e.target.value)} type="email" className="mt-2 mb-5 w-full border-b border-border bg-transparent px-1 py-3 outline-none focus:border-primary" placeholder="you@weeklybengal.news"/>
+          <label className="kicker">Password</label>
+          <input value={password} onChange={e=>setPassword(e.target.value)} type="password" className="mt-2 w-full border-b border-border bg-transparent px-1 py-3 outline-none focus:border-primary" placeholder="••••••••"/>
+          <button onClick={()=>login('reporter')} className="mt-7 w-full rounded-sm bg-primary py-3 text-sm font-bold text-primary-foreground">প্রবেশ করুন / Sign in</button>
+          <div className="my-6 flex items-center gap-3 text-[10px] uppercase tracking-widest text-muted-foreground"><span className="h-px flex-1 bg-border"/>Demo access<span className="h-px flex-1 bg-border"/></div>
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={()=>login('admin')} className="rounded-sm border border-border py-3 text-xs font-bold hover:border-primary"><ShieldCheck size={15} className="mx-auto mb-1 text-accent"/>Admin access</button>
+            <button onClick={()=>login('reporter')} className="rounded-sm border border-border py-3 text-xs font-bold hover:border-primary"><PenLine size={15} className="mx-auto mb-1 text-accent"/>Reporter access</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </>;
+}
+
+function StatusBadge({ status }: {status: Status}) { 
+  return <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status==='published'?'bg-primary/10 text-primary':status==='pending'?'bg-accent/15 text-accent':'bg-muted text-muted-foreground'}`}>{status}</span>; 
+}
+
+function Stat({ icon:Icon, label, value, change }: {icon: typeof BarChart3; label:string; value:string; change?:string}) { 
+  return <div className="rounded-sm border border-border bg-card p-5"><Icon size={18} className="text-accent"/><div className="mt-5 text-3xl font-bold tracking-tight">{value}</div><div className="mt-1 text-xs text-muted-foreground">{label}</div>{change&&<div className="mt-3 text-[10px] font-bold text-primary">{change}</div>}</div>; 
+}
+
+function AdminPage() {
+  const { lang, articles, saveArticle, deleteArticle, reporters, setReporters, notice, setSession } = useApp(); 
+  const [tab,setTab]=useState<'overview'|'articles'|'reporters'>('overview'); 
+  const [,navigate]=useLocation(); 
+  const [editing,setEditing]=useState<Article|null>(null); 
+  const [showForm,setShowForm]=useState(false);
+
+  const remove=async (id:string)=>{if(confirm(tx(lang,'এই গল্পটি মুছে ফেলবেন?','Delete this story?'))) {await deleteArticle(id); notice(tx(lang,'গল্প মুছে ফেলা হয়েছে','Story deleted'))}};
+  const updateStatus=async (a:Article,status:Status)=>{await saveArticle({...a,status}); notice(status==='published'?tx(lang,'গল্প প্রকাশিত হয়েছে','Story published'):tx(lang,'অবস্থা আপডেট হয়েছে','Status updated'))};
+
+  return <>
+    <Seo title={tx(lang,'নিউজরুম নিয়ন্ত্রণ','Newsroom control')} description="Admin Desk" lang={lang}/>
+    <Header/>
+    <main className="mx-auto max-w-[1280px] px-4 py-8 sm:px-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div><div className="kicker">Editorial desk · Admin</div><h1 className="display mt-2 text-4xl font-bold">{tx(lang,'নিউজরুম নিয়ন্ত্রণ','Newsroom control')}</h1></div>
+        <button onClick={()=>{setSession(null);navigate('/')}} className="text-xs font-bold text-muted-foreground hover:text-accent">Log out</button>
+      </div>
+      <div className="my-8 flex gap-6 overflow-x-auto border-b border-border">
+        {[['overview','Overview'],['articles','Articles'],['reporters','Reporters']].map(([v,l])=><button key={v} onClick={()=>setTab(v as typeof tab)} className={`border-b-2 px-1 pb-3 text-sm font-bold ${tab===v?'border-accent text-accent':'border-transparent text-muted-foreground'}`}>{l}</button>)}
+      </div>
+      {tab==='overview'&&<>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat icon={TrendingUp} label="Published stories" value={String(articles.filter(a=>a.status==='published').length)} change="+12% this month"/>
+          <Stat icon={BarChart3} label="Total readership" value="47.2K" change="+8.4% this week"/>
+          <Stat icon={Clock3} label="Pending review" value={String(articles.filter(a=>a.status==='pending').length)} change="Needs attention"/>
+          <Stat icon={Users} label="Active reporters" value={String(reporters.filter(r=>r.active).length)} />
+        </div>
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1.2fr_.8fr]">
+          <div>
+            <SectionTitle title="Recent stories" kicker="Publishing queue" href="/admin"/>
+            <div className="space-y-3">{articles.slice(0,5).map(a=><AdminRow article={a} onEdit={()=>{setEditing(a);setShowForm(true)}} onDelete={()=>remove(a.id)} onPublish={()=>updateStatus(a,'published')} key={a.id}/>)}</div>
+          </div>
+          <div>
+            <SectionTitle title="The team" kicker="Byline desk" href="/admin"/>
+            <div className="space-y-4">{reporters.slice(0,3).map(r=><div key={r.id} className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-bold text-primary">{r.avatar}</span><div className="flex-1"><div className="text-sm font-bold">{r.name}</div><div className="text-xs text-muted-foreground">{r.role}</div></div></div>)}</div>
+          </div>
+        </div>
+      </>}
+      {tab==='articles'&&<>
+        <div className="mb-5 flex justify-end">
+          <button onClick={()=>{setEditing(null);setShowForm(true)}} className="flex items-center gap-2 rounded-sm bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"><Plus size={16}/> New story</button>
+        </div>
+        <div className="overflow-x-auto rounded-sm border border-border">
+          <table className="w-full min-w-[700px] text-left text-sm">
+            <thead className="bg-muted text-xs text-muted-foreground"><tr><th className="p-4">Story</th><th>Category</th><th>Status</th><th>Views</th><th className="p-4 text-right">Actions</th></tr></thead>
+            <tbody>{articles.map(a=><AdminRow article={a} onEdit={()=>{setEditing(a);setShowForm(true)}} onDelete={()=>remove(a.id)} onPublish={()=>updateStatus(a,'published')} table key={a.id}/>)}</tbody>
+          </table>
+        </div>
+      </>}
+      {tab==='reporters'&&<ReportersTab reporters={reporters} setReporters={setReporters} notice={notice}/>}
+    </main>
+    {showForm&&<ArticleForm article={editing} onClose={()=>setShowForm(false)} onSave={async (a)=>{await saveArticle(a); setShowForm(false); notice(tx(lang,'গল্প সংরক্ষিত হয়েছে','Story saved'))}}/>}
+  </>;
+}
+
+function AdminRow({article,onEdit,onDelete,onPublish,table=false}:{article:Article;onEdit:()=>void;onDelete:()=>void;onPublish:()=>void;table?:boolean}) { 
+  const {lang}=useApp(); 
+  if(table) return <tr className="border-t border-border">
+    <td className="p-4"><div className="flex items-center gap-3"><img src={article.image || images.river} className="h-10 w-14 object-cover" alt=""/><div><div className="font-bold">{lang==='bn'?article.titleBn:article.titleEn}</div><div className="text-xs text-muted-foreground">{article.authorName}</div></div></div></td>
+    <td>{article.category}</td>
+    <td><StatusBadge status={article.status}/></td>
+    <td>{article.views.toLocaleString()}</td>
+    <td className="p-4"><div className="flex justify-end gap-1"><button onClick={onEdit} className="rounded p-2 hover:bg-secondary"><Edit3 size={15}/></button>{article.status!=='published'&&<button onClick={onPublish} className="rounded p-2 text-primary hover:bg-secondary"><Check size={15}/></button>}<button onClick={onDelete} className="rounded p-2 text-destructive hover:bg-secondary"><Trash2 size={15}/></button></div></td>
+  </tr>; 
+  return <div className="flex items-center gap-4 rounded-sm border border-border p-3">
+    <img src={article.image || images.river} className="h-12 w-16 object-cover" alt=""/>
+    <div className="min-w-0 flex-1">
+      <div className="truncate text-sm font-bold">{lang==='bn'?article.titleBn:article.titleEn}</div>
+      <div className="mt-1 flex gap-2 text-xs text-muted-foreground"><span>{article.authorName}</span><StatusBadge status={article.status}/></div>
+    </div>
+    <div className="hidden items-center gap-1 sm:flex">
+      <button onClick={onEdit} className="rounded p-2 hover:bg-secondary"><Edit3 size={15}/></button>
+      {article.status!=='published'&&<button onClick={onPublish} className="rounded p-2 text-primary hover:bg-secondary"><Check size={15}/></button>}
+      <button onClick={onDelete} className="rounded p-2 text-destructive hover:bg-secondary"><Trash2 size={15}/></button>
+    </div>
+  </div>; 
+}
+
+function ReportersTab({reporters,setReporters,notice}:{reporters:Reporter[];setReporters:Dispatch<SetStateAction<Reporter[]>>;notice:(s:string)=>void}) { 
+  return <div className="grid gap-4 sm:grid-cols-2">{reporters.map(r=><div className="rounded-sm border border-border bg-card p-5" key={r.id}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary font-bold text-primary">{r.avatar}</span><div><div className="font-bold">{r.name}</div><div className="text-xs text-muted-foreground">{r.role}</div></div></div></div><p className="bn mt-5 text-sm leading-7 text-muted-foreground">{r.bio}</p><div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">{r.email}</div></div>)}</div>; 
+}
+
+function ArticleForm({article,onClose,onSave}:{article:Article|null;onClose:()=>void;onSave:(a:Article)=>Promise<void>}) { 
+  const {session}=useApp(); 
+  const [titleBn,setTitleBn]=useState(article?.titleBn||''); 
+  const [titleEn,setTitleEn]=useState(article?.titleEn||''); 
+  const [excerptBn,setExcerptBn]=useState(article?.excerptBn||''); 
+  const [contentBn,setContentBn]=useState(article?.contentBn||''); 
+  const [category,setCategory]=useState(article?.category||'জাতীয়'); 
+  const [status,setStatus]=useState<Status>(article?.status||'published'); 
+
+  const submit=async (e:FormEvent)=>{
+    e.preventDefault();
+    await onSave({
+      ...article,
+      id:article?.id||`a${Date.now()}`,
+      authorId:article?.authorId||session?.id||'r1',
+      authorName:article?.authorName||session?.name||'রিপোর্টার',
+      titleBn,
+      titleEn:titleEn||titleBn,
+      excerptBn,
+      excerptEn:excerptBn,
+      contentBn,
+      contentEn:contentBn,
+      category,
+      image:article?.image||images.national,
+      status,
+      isBreaking:article?.isBreaking||false,
+      isLead:article?.isLead||false,
+      views:article?.views||0,
+      createdAt:article?.createdAt||new Date().toISOString(),
+      readTime:article?.readTime||5
+    });
+  }; 
+
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-sidebar/50 p-0 sm:items-center sm:p-6">
+    <form onSubmit={submit} className="max-h-[95dvh] w-full max-w-2xl overflow-y-auto rounded-t-sm bg-card p-6 shadow-2xl sm:rounded-sm sm:p-8">
+      <div className="flex items-center justify-between"><div><div className="kicker">{article?'Edit story':'New story'}</div><h2 className="display mt-1 text-2xl font-bold">{article?'গল্প সম্পাদনা':'নতুন গল্প'}</h2></div><button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-secondary"><X size={18}/></button></div>
+      <div className="mt-7 grid gap-5">
+        <label className="text-xs font-bold">বাংলা শিরোনাম<input required value={titleBn} onChange={e=>setTitleBn(e.target.value)} className="mt-2 w-full border-b border-border bg-transparent py-2 text-lg outline-none focus:border-primary"/></label>
+        <label className="text-xs font-bold">English title<input value={titleEn} onChange={e=>setTitleEn(e.target.value)} className="mt-2 w-full border-b border-border bg-transparent py-2 text-lg outline-none focus:border-primary"/></label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="text-xs font-bold">Category<select value={category} onChange={e=>setCategory(e.target.value)} className="mt-2 w-full border border-border bg-transparent p-3">{categoryOptions.map(x=><option key={x.bn} value={x.bn}>{x.bn}</option>)}</select></label>
+          <label className="text-xs font-bold">Status<select value={status} onChange={e=>setStatus(e.target.value as Status)} className="mt-2 w-full border border-border bg-transparent p-3"><option value="published">Published</option><option value="pending">Pending review</option><option value="draft">Draft</option></select></label>
+        </div>
+        <label className="text-xs font-bold">Excerpt<textarea required value={excerptBn} onChange={e=>setExcerptBn(e.target.value)} rows={2} className="mt-2 w-full resize-none border border-border bg-transparent p-3 text-sm outline-none focus:border-primary"/></label>
+        <label className="text-xs font-bold">Story body<textarea required value={contentBn} onChange={e=>setContentBn(e.target.value)} rows={7} className="mt-2 w-full resize-y border border-border bg-transparent p-3 text-sm leading-7 outline-none focus:border-primary"/></label>
+      </div>
+      <div className="mt-7 flex justify-end gap-3"><button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold">Cancel</button><button className="rounded-sm bg-primary px-5 py-2 text-sm font-bold text-primary-foreground">Save story</button></div>
+    </form>
+  </div>; 
+}
+
+function ReporterPage() {
+  const { lang, articles, saveArticle, session, setSession }=useApp(); 
+  const [,navigate]=useLocation(); 
+  const [showForm,setShowForm]=useState(false); 
+  const [editing,setEditing]=useState<Article|null>(null); 
+  const mine=articles.filter(a=>a.authorId===session?.id);
+
+  return <>
+    <Seo title={tx(lang,'আমার ডেস্ক','My desk')} description="Reporter workspace" lang={lang}/>
+    <Header/>
+    <main className="mx-auto max-w-[1100px] px-4 py-8 sm:px-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div><div className="kicker">Reporter workspace</div><h1 className="display mt-2 text-4xl font-bold">{tx(lang,'আমার ডেস্ক','My desk')}</h1></div>
+        <div className="flex gap-2">
+          <button onClick={()=>{setEditing(null);setShowForm(true)}} className="flex items-center gap-2 rounded-sm bg-accent px-4 py-2 text-sm font-bold text-accent-foreground"><Plus size={16}/> New story</button>
+          <button onClick={()=>{setSession(null);navigate('/')}} className="px-3 text-xs font-bold text-muted-foreground">Log out</button>
+        </div>
+      </div>
+      <div className="my-8 grid gap-4 sm:grid-cols-3">
+        <Stat icon={FileText} label="My stories" value={String(mine.length)} />
+        <Stat icon={Clock3} label="Pending review" value={String(mine.filter(a=>a.status==='pending').length)} />
+        <Stat icon={TrendingUp} label="Total views" value={mine.reduce((s,a)=>s+a.views,0).toLocaleString()} />
+      </div>
+      <div className="border-b border-border"><div className="kicker mb-3">Your newsroom</div><h2 className="display pb-3 text-2xl font-bold">Stories</h2></div>
+      <div className="mt-5 space-y-3">
+        {mine.length ? mine.map(a=><AdminRow article={a} key={a.id} onEdit={()=>{setEditing(a);setShowForm(true)}} onDelete={()=>{}} onPublish={()=>{}}/>) : <div className="border border-dashed border-border py-16 text-center"><p className="text-sm text-muted-foreground">আপনার প্রথম গল্পটি লিখুন।</p></div>}
+      </div>
+    </main>
+    {showForm&&<ArticleForm article={editing} onClose={()=>setShowForm(false)} onSave={async (a)=>{await saveArticle(a); setShowForm(false);}}/>}
+  </>;
+}
+
+function NotFound() { 
+  const { lang } = useApp(); 
+  return <>
+    <Seo title={tx(lang,'পাতাটি পাওয়া যায়নি','Page not found')} description="Not found" lang={lang}/>
+    <Header/>
+    <main className="flex min-h-[60dvh] items-center justify-center px-5 text-center">
+      <div>
+        <div className="kicker">404 / Not found</div>
+        <h1 className="display mt-3 text-5xl font-bold">এই পাতাটি নেই।</h1>
+        <Link href="/" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary"><ChevronLeft size={16}/> প্রথম পাতায় ফিরুন</Link>
+      </div>
+    </main>
+  </>; 
+}
+
+function Router() { 
+  return <ErrorBoundary resetKey={location.pathname}>
+    <Switch>
+      <Route path="/" component={Home}/>
+      <Route path="/article/:id" component={ArticlePage}/>
+      <Route path="/search" component={SearchPage}/>
+      <Route path="/login" component={LoginPage}/>
+      <Route path="/admin" component={AdminPage}/>
+      <Route path="/reporter" component={ReporterPage}/>
+      <Route component={NotFound}/>
+    </Switch>
+  </ErrorBoundary>; 
+}
+
 const queryClient = new QueryClient();
+
 function App() {
-  const [lang,setLangState]=useState<Lang>(()=>(localStorage.getItem('wb-lang') as Lang)||'bn'); const [dark,setDark]=useState(()=>localStorage.getItem('wb-dark')==='1'); const [articles,setArticles]=useState<Article[]>(loadArticles); const [reporters,setReporters]=useState<Reporter[]>(()=>{try{return JSON.parse(localStorage.getItem('wb-reporters')||'null')||seedReporters}catch{return seedReporters}}); const [comments,setComments]=useState<Comment[]>(()=>{try{return JSON.parse(localStorage.getItem('wb-comments')||'null')||seedComments}catch{return seedComments}}); const [session,setSessionState]=useState<Session>(()=>{try{return JSON.parse(localStorage.getItem('wb-session')||'null')}catch{return null}}); const [toast,setToast]=useState('');
-  useEffect(()=>{localStorage.setItem('wb-lang',lang)},[lang]); useEffect(()=>{localStorage.setItem('wb-dark',dark?'1':'0');document.documentElement.classList.toggle('dark',dark)},[dark]); useEffect(()=>{localStorage.setItem('wb-articles',JSON.stringify(articles))},[articles]); useEffect(()=>{localStorage.setItem('wb-reporters',JSON.stringify(reporters))},[reporters]); useEffect(()=>{localStorage.setItem('wb-comments',JSON.stringify(comments))},[comments]); useEffect(()=>{localStorage.setItem('wb-session',JSON.stringify(session))},[session]); useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),2600);return()=>clearTimeout(t)},[toast]);
-  const value=useMemo(()=>({lang,setLang:(v:Lang)=>setLangState(v),dark,toggleDark:()=>setDark(x=>!x),articles,setArticles,reporters,setReporters,comments,setComments,session,setSession:(v:Session)=>setSessionState(v),notice:setToast}),[lang,dark,articles,reporters,comments,session]);
-  return <QueryClientProvider client={queryClient}><TooltipProvider><AppContext.Provider value={value}><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/,'')}><Router/></WouterRouter>{toast&&<Notice>{toast}</Notice>}</AppContext.Provider><Toaster/></TooltipProvider></QueryClientProvider>;
+  const [lang,setLangState]=useState<Lang>(()=>(localStorage.getItem('wb-lang') as Lang)||'bn'); 
+  const [dark,setDark]=useState(()=>localStorage.getItem('wb-dark')==='1'); 
+  const [articles,setArticles]=useState<Article[]>(seedArticles); 
+  const [reporters,setReporters]=useState<Reporter[]>(seedReporters); 
+  const [comments,setComments]=useState<Comment[]>(seedComments); 
+  const [session,setSessionState]=useState<Session>(null); 
+  const [toast,setToast]=useState('');
+
+  useEffect(()=>{localStorage.setItem('wb-lang',lang)},[lang]); 
+  useEffect(()=>{localStorage.setItem('wb-dark',dark?'1':'0');document.documentElement.classList.toggle('dark',dark)},[dark]); 
+  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),2600);return()=>clearTimeout(t)},[toast]);
+
+  // Fetch articles from Supabase
+  useEffect(() => {
+    async function fetchFromSupabase() {
+      if (!supabase) return;
+      try {
+        const { data, error } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) {
+          const mapped: Article[] = data.map((d: any) => ({
+            id: d.id,
+            authorId: d.author_id,
+            authorName: d.author_name,
+            titleBn: d.title_bn,
+            titleEn: d.title_en,
+            contentBn: d.content_bn,
+            contentEn: d.content_en,
+            excerptBn: d.excerpt_bn,
+            excerptEn: d.excerpt_en,
+            category: d.category,
+            image: d.image,
+            status: d.status as Status,
+            isBreaking: d.is_breaking,
+            isLead: d.is_lead,
+            views: d.views,
+            createdAt: d.created_at,
+            readTime: d.read_time
+          }));
+          setArticles(mapped);
+        }
+      } catch (e) {
+        console.error('Supabase load error', e);
+      }
+    }
+    fetchFromSupabase();
+  }, []);
+
+  const saveArticle = async (a: Article) => {
+    setArticles(prev => {
+      const idx = prev.findIndex(item => item.id === a.id);
+      return idx >= 0 ? prev.map(item => item.id === a.id ? a : item) : [a, ...prev];
+    });
+
+    if (supabase) {
+      try {
+        await supabase.from('articles').upsert({
+          id: a.id,
+          author_id: a.authorId,
+          author_name: a.authorName,
+          title_bn: a.titleBn,
+          title_en: a.titleEn,
+          content_bn: a.contentBn,
+          content_en: a.contentEn,
+          excerpt_bn: a.excerptBn,
+          excerpt_en: a.excerptEn,
+          category: a.category,
+          image: a.image,
+          status: a.status,
+          is_breaking: a.isBreaking,
+          is_lead: a.isLead,
+          views: a.views,
+          created_at: a.createdAt,
+          read_time: a.readTime
+        });
+      } catch (e) {
+        console.error('Supabase save error', e);
+      }
+    }
+  };
+
+  const deleteArticle = async (id: string) => {
+    setArticles(prev => prev.filter(a => a.id !== id));
+    if (supabase) {
+      try {
+        await supabase.from('articles').delete().eq('id', id);
+      } catch (e) {
+        console.error('Supabase delete error', e);
+      }
+    }
+  };
+
+  const value=useMemo(()=>({
+    lang,
+    setLang:(v:Lang)=>setLangState(v),
+    dark,
+    toggleDark:()=>setDark(x=>!x),
+    articles,
+    setArticles,
+    reporters,
+    setReporters,
+    comments,
+    setComments,
+    session,
+    setSession:(v:Session)=>setSessionState(v),
+    notice:setToast,
+    saveArticle,
+    deleteArticle
+  }),[lang,dark,articles,reporters,comments,session]);
+
+  return <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AppContext.Provider value={value}>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/,'')}>
+          <Router/>
+        </WouterRouter>
+        {toast&&<Notice>{toast}</Notice>}
+      </AppContext.Provider>
+      <Toaster/>
+    </TooltipProvider>
+  </QueryClientProvider>;
 }
 
 export default App;
